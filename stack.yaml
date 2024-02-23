@@ -1,0 +1,9 @@
+extra-deps:
+- discord-haskell-1.16.1
+- emoji-0.1.0.2
+- unliftio-0.2.25.0
+
+resolver: lts-22.11
+
+packages:
+  - .

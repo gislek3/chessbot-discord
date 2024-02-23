@@ -1,0 +1,69 @@
+cabal-version: 2.2
+
+-- This file has been generated from package.yaml by hpack version 0.31.2.
+--
+-- see: https://github.com/sol/hpack
+--
+-- hash: 2b46c9c68d246d771edf375b8a7dc2d96c12ba2e864962cc633a96dea7175787
+
+name:           chess221
+version:        0.1.0.0
+description:    Please see the README on GitHub at <https://github.com/githubuser/chess221#readme>
+homepage:       https://github.com/githubuser/chess221#readme
+bug-reports:    https://github.com/githubuser/chess221/issues
+author:         Author name here
+maintainer:     example@example.com
+copyright:      2024 Author name here
+license:        BSD-3-Clause
+license-file:   LICENSE
+build-type:     Simple
+extra-source-files:
+    README.md
+    CHANGELOG.md
+
+source-repository head
+  type: git
+  location: https://github.com/githubuser/chess221
+
+library
+  exposed-modules:
+      Lib
+  other-modules:
+      Paths_chess221
+  hs-source-dirs:
+      src
+  ghc-options: -Wall -Wcompat -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wmissing-export-lists -Wmissing-home-modules -Wpartial-fields -Wredundant-constraints
+  build-depends:
+      base >=4.7 && <5
+  default-language: Haskell2010
+
+executable chess221
+  main-is: Main.hs
+  other-modules:
+      Paths_chess221
+  hs-source-dirs:
+      app
+  ghc-options: -threaded
+  build-depends:
+      base,
+	  text,
+	  discord-haskell >= 1.16.1,
+      unliftio >= 0.2.25.0,
+      chess221
+  default-language: Haskell2010
+
+test-suite chess221-test
+  type: exitcode-stdio-1.0
+  main-is: Spec.hs
+  other-modules:
+      Paths_chess221
+  hs-source-dirs:
+      test
+  ghc-options: -Wall -Wcompat -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wmissing-export-lists -Wmissing-home-modules -Wpartial-fields -Wredundant-constraints -threaded -rtsopts -with-rtsopts=-N
+  build-depends:
+      base,
+	  text,
+	  discord-haskell >= 1.16.1,
+      unliftio >= 0.2.25.0,
+      chess221
+  default-language: Haskell2010
