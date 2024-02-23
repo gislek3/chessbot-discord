@@ -5,6 +5,7 @@ module Main (main) where
 import           Control.Monad (when, void)
 import           UnliftIO.Concurrent
 import           Data.Text (isPrefixOf, toLower, Text)
+import           Data.Maybe (isNothing)
 import qualified Data.Text.IO as TIO
 
 import           Discord
@@ -29,14 +30,18 @@ pingpongExample = do
 
 eventHandler :: Event -> DiscordHandler ()
 eventHandler event = case event of
-    MessageCreate m -> when (isPing m && not (fromBot m)) $ do
+    MessageCreate m -> when (isPrivateMsg m && isPing m && not (fromBot m)) $ do
         void $ restCall (R.CreateReaction (messageChannelId m, messageId m) "eyes")
-        threadDelay (2 * 10^6)
+        threadDelay (2 * 10^6) -- 2-second delay
         void $ restCall (R.CreateMessage (messageChannelId m) "Pong!")
     _ -> return ()
 
 fromBot :: Message -> Bool
 fromBot = userIsBot . messageAuthor
+
+-- Check if a message is a private message
+isPrivateMsg :: Message -> Bool
+isPrivateMsg m = isNothing (messageGuildId m)
 
 isPing :: Message -> Bool
 isPing = ("ping" `isPrefixOf`) . toLower . messageContent
