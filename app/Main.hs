@@ -15,9 +15,8 @@ import qualified Discord.Requests as R
 import Lib
 
 
--- | Replies "pong" to every message that starts with "ping"
-pingpongExample :: IO ()
-pingpongExample = do
+chessbot :: IO ()
+chessbot = do
     userFacingError <- runDiscord $ def
              { discordToken = "Bot MTIwOTk5NTU5NzgwNTkxNjIwMQ.GQcDzY.oH0BmxE2QPdQGOwDUJ0pLlCAZ4GayfLzDUHhQo"
              , discordOnEvent = eventHandler
@@ -46,7 +45,5 @@ isPrivateMsg m = isNothing (messageGuildId m)
 isPing :: Message -> Bool
 isPing = ("ping" `isPrefixOf`) . toLower . messageContent
 
-
-
 main :: IO ()
-main = pingpongExample
+main = chessbot
