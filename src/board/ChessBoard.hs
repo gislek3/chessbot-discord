@@ -2,6 +2,12 @@
 
 module Board.ChessBoard where
 
+{-
+TODO: divide into multiple files.
+
+I only want board logic here, then piece/move logic can be elsehwere
+-}
+
 
 import qualified Data.Map as M
 import Data.Map (lookup)
@@ -60,23 +66,28 @@ startingBoard = foldr placePiece emptyBoard startingPieces
       ]
 
 
+boardWithJust :: Board
+boardWithJust = M.insert (4,2) (Just (Piece Knight White)) emptyBoard
+
 
 -- Helper function to convert a Piece to its Unicode representation. Change if desired.
+-- NOTE: black and white pieces are swapped, it just makes sense
 pieceToChar :: Maybe Piece -> Char
 pieceToChar p = case p of
-    Just (Piece Pawn White) -> '\x2659'
-    Just (Piece Rook White) -> '\x2656'
-    Just (Piece Knight White) -> '\x2658'
-    Just (Piece Bishop White) -> '\x2657'
-    Just (Piece Queen White) -> '\x2655'
-    Just (Piece King White) -> '\x2654'
-    Just (Piece Pawn Black) -> '\x265F' 
-    Just (Piece Rook Black) -> '\x265C'
-    Just (Piece Knight Black) -> '\x265E'
-    Just (Piece Bishop Black) -> '\x265D'
-    Just (Piece Queen Black) -> '\x265B'
-    Just (Piece King Black) -> '\x265A'
-    Nothing -> '\x2002'
+    Just (Piece Pawn White) -> '\x265F' 
+    Just (Piece Rook White) -> '\x265C' 
+    Just (Piece Knight White) -> '\x265E' 
+    Just (Piece Bishop White) -> '\x265D' 
+    Just (Piece Queen White) -> '\x265B' 
+    Just (Piece King White) -> '\x265A' 
+    Just (Piece Pawn Black) -> '\x2659' 
+    Just (Piece Rook Black) -> '\x2656' 
+    Just (Piece Knight Black) -> '\x2658' 
+    Just (Piece Bishop Black) -> '\x2657' 
+    Just (Piece Queen Black) -> '\x2655' 
+    Just (Piece King Black) -> '\x2654' 
+    Nothing -> '\x2002'  -- Space for empty square
+
 
 
 --Wrapper for Map.lookup

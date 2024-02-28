@@ -45,7 +45,7 @@ chessbot = do
 
 eventHandler :: Event -> DiscordHandler ()
 eventHandler event = case event of
-    MessageCreate m -> when (isPrivateMsg m && isPing m && not (fromBot m)) $ do
+    MessageCreate m -> when (isPrivateMsg m && not (fromBot m)) $ do
         threadDelay (2 * 10^6) -- 2-second delay
         void $ restCall (R.CreateMessage (messageChannelId m) (Board.ChessBoard.showBoard $ Board.ChessBoard.startingBoard))
     _ -> return ()
@@ -59,20 +59,6 @@ isPrivateMsg m = isNothing (messageGuildId m)
 
 isPing :: Message -> Bool
 isPing = ("ping" `isPrefixOf`) . toLower . messageContent
-
-
-startBoardTEST :: Text
-startBoardTEST = Data.Text.unlines
-  [ Data.Text.pack "\x2656\x2658\x2657\x2655\x2654\x2657\x2658\x2656"  -- White Rooks, Knights, Bishops, Queen, King, Bishops, Knights, Rooks
-  , Data.Text.pack $ replicate 8 '\x2659'  -- White Pawns
-  , Data.Text.pack $ replicate 8 '*'       -- Empty Squares
-  , Data.Text.pack $ replicate 8 '*'
-  , Data.Text.pack $ replicate 8 '*'
-  , Data.Text.pack $ replicate 8 '*'
-  , Data.Text.pack $ replicate 8 '\x265F'  -- Black Pawns
-  , Data.Text.pack "\x265C\x265E\x265D\x265B\x265A\x265D\x265E\x265C"  -- Black Rooks, Knights, Bishops, Queen, King, Bishops, Knights, Rooks
-  ]
-
 
 main :: IO ()
 main = chessbot
