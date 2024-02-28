@@ -31,12 +31,29 @@ type Board = M.Map Square (Maybe Piece)
 data Move = Move {piece :: Piece, old_square :: Square, new_square :: Square}
     deriving (Show, Eq)
 
--- Example: Initialize an empty chess board
+-- Initialize an empty chess board
 emptyBoard :: Board
 emptyBoard = M.fromList [((i, j), Nothing) | i <- [0..7], j <- [0..7]]
 
+-- Place a piece on the board
+placePiece :: (Square, Piece) -> Board -> Board
+placePiece (square, piece) board = M.insert square (Just piece) board
 
--- Helper function to convert a Piece to its Unicode representation
+-- TODO: Initialize the initial board, in the starting position
+startingBoard :: Board
+startingBoard = foldr placePiece emptyBoard startingPieces
+  where
+    -- List of pieces with their starting positions
+    startingPieces :: [(Square, Piece)]
+    startingPieces = 
+      [ ((0, 0), Piece Rook Black), ((7, 0), Piece Rook Black),
+        ((1, 0), Piece Knight Black), ((6, 0), Piece Knight Black),
+        ((2, 0), Piece Bishop Black), ((5, 0), Piece Bishop Black),
+        ((3, 0), Piece Queen Black), ((4, 0), Piece King Black)
+      ] ++ [((x, 1), Piece Pawn Black) | x <- [0..7]]
+
+
+-- Helper function to convert a Piece to its Unicode representation. Change if desired.
 pieceToChar :: Maybe Piece -> Char
 pieceToChar p = case p of
     Just (Piece Pawn White) -> '\x2659'
@@ -51,7 +68,7 @@ pieceToChar p = case p of
     Just (Piece Bishop Black) -> '\x265D'
     Just (Piece Queen Black) -> '\x265B'
     Just (Piece King Black) -> '\x265A'
-    Nothing -> '*'
+    Nothing -> '\x2002'
 
 
 --Wrapper for Map.lookup
@@ -66,12 +83,8 @@ lookupSquare s b = case (M.lookup s b) of
 showBoard :: Board -> T.Text
 showBoard b = T.intercalate "\n" (topMargin : boardRows ++ [bottomMargin])
   where
-    -- Top margin with file labels (a to h) for the chess board.
-    -- This is the header row above the board showing the columns.
+    -- Margine with file labels (a to h) for the chess board.
     topMargin = "  a b c d e f g h"
-
-    -- Bottom margin, identical to the top margin.
-    -- This footer row below the board repeats the columns for clarity.
     bottomMargin = topMargin
 
     boardRows = [T.pack (show (8-y)) <> " "    -- Convert the row index to a rank label, add to beginning
@@ -84,15 +97,12 @@ showBoard b = T.intercalate "\n" (topMargin : boardRows ++ [bottomMargin])
                               | x <- [0..7]] -- see helper function pieceToChar
 
 
-
 -- Applies a move to the board if the move is legal
 makeMove :: Move -> Board -> Maybe Board
 makeMove move board =
     if is_legal move board then
         let 
-            -- Remove the piece from the old square
             boardWithoutOldPiece = M.insert (old_square move) Nothing board
-            -- Place the piece at the new square
             boardWithNewPiece = M.insert (new_square move) (Just (piece move)) boardWithoutOldPiece
         in 
             Just boardWithNewPiece
@@ -102,3 +112,4 @@ makeMove move board =
     -- Placeholder for the legal move checker, always returns True for now
     is_legal :: Move -> Board -> Bool
     is_legal _ _ = True
+

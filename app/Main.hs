@@ -47,7 +47,7 @@ eventHandler :: Event -> DiscordHandler ()
 eventHandler event = case event of
     MessageCreate m -> when (isPrivateMsg m && isPing m && not (fromBot m)) $ do
         threadDelay (2 * 10^6) -- 2-second delay
-        void $ restCall (R.CreateMessage (messageChannelId m) ("ok"))
+        void $ restCall (R.CreateMessage (messageChannelId m) (Board.ChessBoard.showBoard $ Board.ChessBoard.startingBoard))
     _ -> return ()
 
 fromBot :: Message -> Bool
