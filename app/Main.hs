@@ -1,18 +1,28 @@
 {-# LANGUAGE OverloadedStrings #-}  -- allows "string literals" to be Text
 
+--Module declaration
 module Main (main) where
 
+
+--Local imports
+import Board.ChessBoard
+
+--Discord imports
+import           Discord
+import           Discord.Types
+import qualified Discord.Requests as R
+
+--Stack imports
+import Lib
+
+--Imports not otherwise specified
 import           Control.Monad (when, void)
 import           UnliftIO.Concurrent
 import           Data.Text (isPrefixOf, toLower, pack, unlines, Text)
 import           Data.Maybe (isNothing)
 import qualified Data.Text.IO as TIO
 
-import           Discord
-import           Discord.Types
-import qualified Discord.Requests as R
 
-import Lib
 
 {-
 Most of the code found on this page has been copied from:
@@ -37,7 +47,7 @@ eventHandler :: Event -> DiscordHandler ()
 eventHandler event = case event of
     MessageCreate m -> when (isPrivateMsg m && isPing m && not (fromBot m)) $ do
         threadDelay (2 * 10^6) -- 2-second delay
-        void $ restCall (R.CreateMessage (messageChannelId m) startingBoard)
+        void $ restCall (R.CreateMessage (messageChannelId m) ("ok"))
     _ -> return ()
 
 fromBot :: Message -> Bool
@@ -51,12 +61,8 @@ isPing :: Message -> Bool
 isPing = ("ping" `isPrefixOf`) . toLower . messageContent
 
 
-{-
-Converts a Board int
--}
-
-startingBoard :: Text
-startingBoard = Data.Text.unlines
+startBoardTEST :: Text
+startBoardTEST = Data.Text.unlines
   [ Data.Text.pack "\x2656\x2658\x2657\x2655\x2654\x2657\x2658\x2656"  -- White Rooks, Knights, Bishops, Queen, King, Bishops, Knights, Rooks
   , Data.Text.pack $ replicate 8 '\x2659'  -- White Pawns
   , Data.Text.pack $ replicate 8 '*'       -- Empty Squares
@@ -66,6 +72,7 @@ startingBoard = Data.Text.unlines
   , Data.Text.pack $ replicate 8 '\x265F'  -- Black Pawns
   , Data.Text.pack "\x265C\x265E\x265D\x265B\x265A\x265D\x265E\x265C"  -- Black Rooks, Knights, Bishops, Queen, King, Bishops, Knights, Rooks
   ]
+
 
 main :: IO ()
 main = chessbot

@@ -27,14 +27,16 @@ source-repository head
 
 library
   exposed-modules:
-      Lib
+      Lib, Board.ChessBoard
   other-modules:
       Paths_chess221
   hs-source-dirs:
       src
   ghc-options: -Wall -Wcompat -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wmissing-export-lists -Wmissing-home-modules -Wpartial-fields -Wredundant-constraints
   build-depends:
-      base >=4.7 && <5
+      base >=4.7 && <5,
+      containers,
+      text
   default-language: Haskell2010
 
 executable chess221
