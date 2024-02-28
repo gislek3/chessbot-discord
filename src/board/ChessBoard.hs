@@ -50,7 +50,15 @@ startingBoard = foldr placePiece emptyBoard startingPieces
         ((1, 0), Piece Knight Black), ((6, 0), Piece Knight Black),
         ((2, 0), Piece Bishop Black), ((5, 0), Piece Bishop Black),
         ((3, 0), Piece Queen Black), ((4, 0), Piece King Black)
-      ] ++ [((x, 1), Piece Pawn Black) | x <- [0..7]]
+      ]
+      ++ [((x, 1), Piece Pawn Black) | x <- [0..7]]
+      ++ [((x, 6), Piece Pawn White) | x <- [0..7]]
+      ++ [  ((0, 7), Piece Rook White), ((7, 7), Piece Rook White),
+            ((1, 7), Piece Knight White), ((6, 7), Piece Knight White),
+            ((2, 7), Piece Bishop White), ((5, 7), Piece Bishop White),
+            ((3, 7), Piece Queen White), ((4, 7), Piece King White)
+      ]
+
 
 
 -- Helper function to convert a Piece to its Unicode representation. Change if desired.
