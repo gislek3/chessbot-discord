@@ -5,7 +5,7 @@ module Main (main) where
 
 
 --Local imports
-import Board.ChessBoard
+import Chess.Board
 
 --Discord imports
 import           Discord
@@ -47,7 +47,7 @@ eventHandler :: Event -> DiscordHandler ()
 eventHandler event = case event of
     MessageCreate m -> when (isPrivateMsg m && not (fromBot m)) $ do
         threadDelay (2 * 10^6) -- 2-second delay
-        void $ restCall (R.CreateMessage (messageChannelId m) (Board.ChessBoard.showBoard $ Board.ChessBoard.startingBoard))
+        void $ restCall (R.CreateMessage (messageChannelId m) (Chess.Board.showBoard $ Chess.Board.startingBoard))
     _ -> return ()
 
 fromBot :: Message -> Bool

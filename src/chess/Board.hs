@@ -1,6 +1,6 @@
 {-# LANGUAGE OverloadedStrings #-}  -- allows "string literals" to be Text
 
-module Board.ChessBoard where
+module Chess.Board where
 
 {-
 TODO: divide into multiple files.

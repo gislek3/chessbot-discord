@@ -27,7 +27,7 @@ source-repository head
 
 library
   exposed-modules:
-      Lib, Board.ChessBoard
+      Lib, Chess.Board
   other-modules:
       Paths_chess221
   hs-source-dirs:
