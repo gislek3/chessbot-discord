@@ -11,7 +11,7 @@ I only want board logic here, then piece/move logic can be elsehwere
 
 import qualified Data.Map as M
 import Data.Map (lookup)
-import Data.Maybe (fromJust)
+import Data.Maybe (fromJust, isNothing)
 import qualified Data.Text as T
 import qualified Data.Text.IO as TIO
 
@@ -39,16 +39,20 @@ data Move = Move {piece :: Piece, old_square :: Square, new_square :: Square}
     deriving (Show, Eq)
 
 -- Initialize an empty chess board
-emptyBoard :: Board
-emptyBoard = M.fromList [((i, j), Nothing) | i <- [0..7], j <- [0..7]]
+empty :: Board
+empty = M.fromList [((i, j), Nothing) | i <- [0..7], j <- [0..7]]
 
 -- Place a piece on the board
-placePiece :: (Square, Piece) -> Board -> Board
-placePiece (square, piece) board = M.insert square (Just piece) board
+place :: (Square, Piece) -> Board -> Board
+place (square, piece) board = M.insert square (Just piece) board
+
+-- Clear a square on the board, does nothing if square is empty
+clear :: Square -> Board -> Board
+clear square board = M.insert square Nothing board
 
 -- TODO: Initialize the initial board, in the starting position
 startingBoard :: Board
-startingBoard = foldr placePiece emptyBoard startingPieces
+startingBoard = foldr place empty startingPieces
   where
     -- List of pieces with their starting positions
     startingPieces :: [(Square, Piece)]
@@ -104,16 +108,16 @@ pieceToChar2 p = case p of
 
 
 --Wrapper for Map.lookup
-lookupSquare :: Square -> Board -> Maybe Piece
-lookupSquare s b = case (M.lookup s b) of
+lookupB :: Square -> Board -> Maybe Piece
+lookupB s b = case (M.lookup s b) of
     Just (Just a) -> Just a
     Just Nothing -> Nothing
     Nothing -> error "Square is out of bounds. For any (x,y) make sure x <- [0..7] and y <- [0..7]."
 
 
 -- Converts the chess board to a human-readable string representation.
-showBoard :: Board -> T.Text
-showBoard b = T.intercalate "\n" (topMargin : boardRows ++ [bottomMargin])
+showB :: Board -> T.Text
+showB b = T.intercalate "\n" (topMargin : boardRows ++ [bottomMargin])
   where
     -- Margine with file labels (a to h) for the chess board.
     topMargin = "  a b c d e f g h"
@@ -130,7 +134,7 @@ showBoard b = T.intercalate "\n" (topMargin : boardRows ++ [bottomMargin])
     TODO:
     please note that this uses pieceToChar2, if you wish to test it for Discord, switch to pieceToChar
     -}
-    rowToString y = T.concat [T.singleton (pieceToChar2 (lookupSquare (x, y) b)) <> " "
+    rowToString y = T.concat [T.singleton (pieceToChar2 (lookupB (x, y) b)) <> " "
                               | x <- [0..7]] -- see helper function pieceToChar
 
 
@@ -139,8 +143,8 @@ makeMove :: Move -> Board -> Maybe Board
 makeMove move board =
     if is_legal move board then
         let 
-            boardWithoutOldPiece = M.insert (old_square move) Nothing board
-            boardWithNewPiece = M.insert (new_square move) (Just (piece move)) boardWithoutOldPiece
+            boardWithoutOldPiece = clear (old_square move) board
+            boardWithNewPiece = place (new_square move, piece move) boardWithoutOldPiece
         in 
             Just boardWithNewPiece
     else
