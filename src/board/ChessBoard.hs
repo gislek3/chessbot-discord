@@ -11,6 +11,7 @@ I only want board logic here, then piece/move logic can be elsehwere
 
 import qualified Data.Map as M
 import Data.Map (lookup)
+import Data.Maybe (fromJust)
 import qualified Data.Text as T
 import qualified Data.Text.IO as TIO
 
@@ -66,10 +67,6 @@ startingBoard = foldr placePiece emptyBoard startingPieces
       ]
 
 
-boardWithJust :: Board
-boardWithJust = M.insert (4,2) (Just (Piece Knight White)) emptyBoard
-
-
 -- Helper function to convert a Piece to its Unicode representation. Change if desired.
 -- NOTE: black and white pieces are swapped, it just makes sense
 pieceToChar :: Maybe Piece -> Char
@@ -88,6 +85,22 @@ pieceToChar p = case p of
     Just (Piece King Black) -> '\x2654' 
     Nothing -> '\x2002'  -- Space for empty square
 
+
+pieceToChar2 :: Maybe Piece -> Char
+pieceToChar2 p = case p of
+    Just (Piece Pawn White) -> 'P' 
+    Just (Piece Rook White) -> 'R' 
+    Just (Piece Knight White) -> 'N' 
+    Just (Piece Bishop White) -> 'B' 
+    Just (Piece Queen White) -> 'Q' 
+    Just (Piece King White) -> 'K' 
+    Just (Piece Pawn Black) -> 'p' 
+    Just (Piece Rook Black) -> 'r' 
+    Just (Piece Knight Black) -> 'n' 
+    Just (Piece Bishop Black) -> 'b' 
+    Just (Piece Queen Black) -> 'q' 
+    Just (Piece King Black) -> 'k' 
+    Nothing -> ' '  -- Space for empty square
 
 
 --Wrapper for Map.lookup
@@ -111,8 +124,13 @@ showBoard b = T.intercalate "\n" (topMargin : boardRows ++ [bottomMargin])
                  <> " " <> T.pack (show (8-y)) -- Add the same rank label to the end.
                  | y <- [0..7]] -- Do this for each row
 
-
-    rowToString y = T.concat [T.singleton (pieceToChar (lookupSquare (x, y) b)) <> " "
+    {-
+    TODO:
+    TODO:
+    TODO:
+    please note that this uses pieceToChar2, if you wish to test it for Discord, switch to pieceToChar
+    -}
+    rowToString y = T.concat [T.singleton (pieceToChar2 (lookupSquare (x, y) b)) <> " "
                               | x <- [0..7]] -- see helper function pieceToChar
 
 
