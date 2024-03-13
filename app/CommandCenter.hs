@@ -21,9 +21,9 @@ the rules of the game and does any modification to the actual chess boards.
 
 
 
-
-
 --Local imports
+import Chess.Board (Square, Move)
+import Parsing.ChessParser
 
 --Discord imports
 import Discord.Types (UserId)
@@ -34,6 +34,21 @@ import qualified Data.Text as T
 
 --Split version of discord-haskell's Message, to seperate concerns
 type Input = (UserId, T.Text)
+
  
+-- Converts a Square to Text representation
+squareToText :: Square -> T.Text
+squareToText (file, rank) = T.pack $ "(" ++ show file ++ "," ++ show rank ++ ")"
+
+-- Converts a ChessCommand to Text
+commandToText :: ChessCommand -> T.Text
+commandToText (Move start end) = squareToText start <> " " <> squareToText end
+commandToText Flip = "Flip command issued"
+commandToText Resign = "Resign command issued"
+
+-- Main handler function
 handle :: Input -> T.Text
-handle _ = "OK"
+handle (_, commandText) = 
+    case parseInput commandText of
+        Left _ -> "Invalid input"
+        Right command -> commandToText command
