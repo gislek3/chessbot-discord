@@ -5,7 +5,7 @@ module Main (main) where
 
 
 --Local imports
-import Chess.Board
+import CommandCenter
 
 --Discord imports
 import           Discord
@@ -46,9 +46,17 @@ chessbot = do
 eventHandler :: Event -> DiscordHandler ()
 eventHandler event = case event of
     MessageCreate m -> when (isPrivateMsg m && not (fromBot m)) $ do
-        threadDelay (2 * 10^6) -- 2-second delay
-        void $ restCall (R.CreateMessage (messageChannelId m) (Chess.Board.showBoard $ Chess.Board.startingBoard))
+        let input = (userIdFromMessage m, messageContent m)
+        let output = CommandCenter.handle input
+
+        threadDelay (2 * 10^6) -- REMOVE? 2-second delay
+        void $ restCall (R.CreateMessage (messageChannelId m) output)
     _ -> return ()
+
+
+-- Extract the user ID from a message
+userIdFromMessage :: Message -> UserId
+userIdFromMessage = userId . messageAuthor
 
 fromBot :: Message -> Bool
 fromBot = userIsBot . messageAuthor
@@ -57,8 +65,9 @@ fromBot = userIsBot . messageAuthor
 isPrivateMsg :: Message -> Bool
 isPrivateMsg m = isNothing (messageGuildId m)
 
-isPing :: Message -> Bool
-isPing = ("ping" `isPrefixOf`) . toLower . messageContent
+
+--isPing :: Message -> Bool
+--isPing = ("ping" `isPrefixOf`) . toLower . messageContent
 
 main :: IO ()
 main = chessbot

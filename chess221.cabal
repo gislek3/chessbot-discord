@@ -42,7 +42,7 @@ library
 executable chess221
   main-is: Main.hs
   other-modules:
-      Paths_chess221
+      Paths_chess221, CommandCenter
   hs-source-dirs:
       app
   ghc-options: -threaded
