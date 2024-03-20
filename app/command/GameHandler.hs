@@ -14,53 +14,34 @@ import Chess.Game
 type GameRegistry = TVar (M.Map UserId ChessGame)
 data CommandOutcome = Success | LegalMove | IllegalMove | Invalid deriving (Show, Eq)
 
--- CommandResult might include the outcome, a message for the user, and optionally the current state of the board.
+--Composite of a result: The enumeric outcome of the ChessCommand, a human-friendly summary, and the resulting game of chess
 data CommandResult = CommandResult {
     outcome :: CommandOutcome,
     message :: T.Text,
-    game :: ChessGame  -- The current state of the board, if applicable
+    game :: ChessGame 
 } deriving (Show, Eq)
 
-{- 
-setupGameHandler :: GameRegistry -> (UserId -> T.Text -> IO CommandResult)
-setupGameHandler gameRegistry = \userId inputText ->
-  case parseInput inputText of
-    Left _ -> atomically $ do
-      -- Retrieve the current board state to return it unchanged on invalid command
-      registry <- readTVar gameRegistry
-      let board = M.findWithDefault startingBoard userId registry
-      return (Invalid, "Invalid command", board)
-    Right command -> atomically $ do
-      registry <- readTVar gameRegistry
-      -- Here, it's ensured that board always has a state, either the existing state or startingBoard for new users
-      let board = M.findWithDefault startingBoard userId registry
-      let (outcome, message, newBoard) = processCommand command board
-      -- Update the registry with the new or unchanged board
-      let updatedRegistry = M.insert userId newBoard registry
-      writeTVar gameRegistry updatedRegistry
-      return (outcome, message, newBoard) -}
-
 
 setupGameHandler :: GameRegistry -> (UserId -> T.Text -> IO CommandResult)
 setupGameHandler gameRegistry = \userId inputText ->
-  atomically $ do
-    registry <- readTVar gameRegistry
-    let game = M.findWithDefault defaultStart userId registry
-    -- Attempt to parse the input. If parsing fails, return the current board state with an error message.
+  atomically $ do --as we want to read the registry, we need an atomic action
+    registry <- readTVar gameRegistry --read the registry
+    let game = M.findWithDefault defaultStart userId registry --find the user's session
+
+    --use chessparser to decipher the user's input text
     case parseInput inputText of
-      Left _ -> return $ CommandResult Invalid "Invalid command" game
-      Right command -> do
-        let commandResult = processCommand command game
+      Left _ -> return $ CommandResult Invalid "Invalid command" game --failed to parse
+      Right command -> do --successful parse into a ChessCommand
+        let commandResult = processCommand command game --result
         case commandResult of
-          -- Only update the game registry if the command was processed successfully.
-          CommandResult Success _ updatedGame -> do
+          CommandResult Success _ updatedGame -> do --only write on success
             let updatedRegistry = M.insert userId updatedGame registry
-            writeTVar gameRegistry updatedRegistry
+            writeTVar gameRegistry updatedRegistry --we still have exclusive access
             return commandResult
-          -- For outcomes other than Success, do not update the registry.
-          _ -> return commandResult
+          _ -> return commandResult --
 
 
+--Function which handles the use of ChessCommand on the user's game and communicates result
 processCommand :: ChessCommand -> ChessGame -> CommandResult
 processCommand command game =
   case command of
@@ -69,8 +50,5 @@ processCommand command game =
         then CommandResult Success "OK" attempt
       else CommandResult IllegalMove "NOT OK" game
 
-    ResignCmd ->
-      -- Handle resignation, possibly resetting the board to starting state or marking the game as finished
-      CommandResult Success "Game over, you have resigned." game
-    
+    ResignCmd -> CommandResult Success "Game over, you have resigned." game
     _ -> CommandResult Invalid "Invalid command submitted." game
