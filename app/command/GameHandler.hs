@@ -21,7 +21,7 @@ data CommandResult = CommandResult {
     game :: ChessGame 
 } deriving (Show, Eq)
 
-
+--TODO: document
 setupGameHandler :: GameRegistry -> (UserId -> T.Text -> IO CommandResult)
 setupGameHandler gameRegistry = \userId inputText ->
   atomically $ do --as we want to read the registry, we need an atomic action
