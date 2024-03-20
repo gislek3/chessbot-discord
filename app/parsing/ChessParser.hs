@@ -13,9 +13,9 @@ import Control.Monad (void, when)
 type Parser = Parsec Void Text
 
 data ChessCommand
-  = Move Square Square  -- Updated to use Square
-  | Flip
-  | Resign
+  = MoveCmd Square Square 
+  | FlipCmd
+  | ResignCmd
   deriving (Show, Eq)
 
 
@@ -40,15 +40,15 @@ moveParser = do
   start <- squareParser
   space
   end <- squareParser
-  return $ Move start end
+  return $ MoveCmd start end
 
 -- A parser for the "flip" command.
 flipParser :: Parser ChessCommand
-flipParser = string "flip" >> return Flip
+flipParser = string "flip" >> return FlipCmd
 
 -- A parser for the "resign" command.
 resignParser :: Parser ChessCommand
-resignParser = string "resign" >> return Resign
+resignParser = string "resign" >> return ResignCmd
 
 -- Combine all parsers to parse any of the commands.
 commandParser :: Parser ChessCommand

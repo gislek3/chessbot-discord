@@ -107,35 +107,52 @@ pieceToChar2 p = case p of
     Nothing -> ' '  -- Space for empty square
 
 
---Wrapper for Map.lookup
-lookupB :: Square -> Board -> Maybe Piece
-lookupB s b = case (M.lookup s b) of
-    Just (Just a) -> Just a
-    Just Nothing -> Nothing
-    Nothing -> error "Square is out of bounds. For any (x,y) make sure x <- [0..7] and y <- [0..7]."
+--Wrapper for Map.lookup that uses Either error handling (to deal with indexing errors), and works around the "double maybe" which results in a lookup on a Map to Maybe a
+-- This allows for empty squares to be Nothing and illegal squares to be something else.
+lookupB :: Square -> Board -> Either String (Maybe Piece)
+lookupB s b
+  | isValidSquare s && isNothing (M.lookup s b) = Right Nothing
+  | isValidSquare s = Right (fromJust (M.lookup s b))
+  | otherwise = Left "Square is out of bounds. For any (x,y) make sure x <- [0..7] and y <- [0..7]."
 
+
+isValidSquare :: Square -> Bool
+isValidSquare (x,y) = (x >= 0 &&  x <= 7) && (y >= 0 && y <= 7)
 
 -- Converts the chess board to a human-readable string representation.
 showB :: Board -> T.Text
 showB b = T.intercalate "\n" (topMargin : boardRows ++ [bottomMargin])
   where
-    -- Margine with file labels (a to h) for the chess board.
     topMargin = "  a b c d e f g h"
     bottomMargin = topMargin
 
-    boardRows = [T.pack (show (8-y)) <> " "    -- Convert the row index to a rank label, add to beginning
-                 <> rowToString y              -- Generate a string representation of the row.
-                 <> " " <> T.pack (show (8-y)) -- Add the same rank label to the end.
-                 | y <- [0..7]] -- Do this for each row
+    boardRows = [T.pack (show (8 - y)) <> " " <> rowToString y <> " " <> T.pack (show (8 - y)) | y <- [0..7]]
 
-    {-
-    TODO:
-    TODO:
-    TODO:
-    please note that this uses pieceToChar2, if you wish to test it for Discord, switch to pieceToChar
-    -}
-    rowToString y = T.concat [T.singleton (pieceToChar2 (lookupB (x, y) b)) <> " "
-                              | x <- [0..7]] -- see helper function pieceToChar
+    -- Helper to convert Right value to Maybe, ignoring Left as it shouldn't occur here
+    rightToMaybe :: Either a b -> Maybe b
+    rightToMaybe (Right val) = Just val
+    rightToMaybe _ = Nothing
+
+    rowToString :: Int -> T.Text
+    rowToString y = T.concat [
+        T.singleton (
+            case lookupB (x, y) b of
+                Left errMsg -> '?'  -- Handle OOB error, which shouldn't occur in this context
+                Right maybePiece -> pieceToChar maybePiece
+        ) <> " " | x <- [0..7]]
+
+
+makeMove' :: Square -> Square -> Board -> Maybe Board
+makeMove' start end board =
+  case lookupB start board of
+    Left errMsg -> Nothing  -- Handle the OOB error by ignoring the move or logging the error as needed
+    Right Nothing -> Nothing  -- No piece at the start square
+    Right (Just p) ->
+      -- Attempt to make the move; if successful, return the new board state
+      makeMove (Move p start end) board
+
+
+
 
 
 -- Applies a move to the board if the move is legal

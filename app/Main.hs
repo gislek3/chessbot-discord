@@ -5,8 +5,6 @@ module Main (main) where
 
 
 --Local imports
-import CommandCenter
-
 --Discord imports
 import           Discord
 import           Discord.Types
@@ -16,11 +14,17 @@ import qualified Discord.Requests as R
 import Lib
 
 --Imports not otherwise specified
+import Control.Concurrent.STM
 import           Control.Monad (when, void)
 import           UnliftIO.Concurrent
 import           Data.Text (isPrefixOf, toLower, pack, unlines, Text)
+import qualified Data.Text as T
 import           Data.Maybe (isNothing)
 import qualified Data.Text.IO as TIO
+import qualified Data.Map as M
+import Chess.Board
+import Command.GameHandler
+import UnliftIO (liftIO)
 
 
 
@@ -31,27 +35,34 @@ https://github.com/discord-haskell/discord-haskell/tree/master
 And I've only made modifications to it to suit my needs.
 -}
 
+-- Define a higher-order function that takes a handleCommand function
+-- and returns an event handler
+createEventHandler :: (UserId -> T.Text -> IO CommandResult) -> Event -> DiscordHandler ()
+createEventHandler handleCommand = \event -> case event of
+  MessageCreate m -> when (isPrivateMsg m && not (fromBot m)) $ do
+    let userId = userIdFromMessage m
+    let inputText = messageContent m
+    result <- liftIO $ handleCommand userId inputText
+    let response = case result of
+                      CommandResult outcome msg board ->
+                        msg <> showB board
+    void $ restCall (R.CreateMessage (messageChannelId m) response)
+  _ -> return ()
+
+
 chessbot :: IO ()
 chessbot = do
-    userFacingError <- runDiscord $ def
-             { discordToken = "Bot MTIwOTk5NTU5NzgwNTkxNjIwMQ.GQcDzY.oH0BmxE2QPdQGOwDUJ0pLlCAZ4GayfLzDUHhQo"
-             , discordOnEvent = eventHandler
-             , discordOnLog = \s -> TIO.putStrLn s >> TIO.putStrLn ""
-             } -- if you see OnLog error, post in the discord / open an issue
+  gameRegistry <- atomically $ newTVar M.empty
+  let handleCommand = setupGameHandler gameRegistry
 
-    TIO.putStrLn userFacingError
-    -- userFacingError is an unrecoverable error
-    -- put normal 'cleanup' code in discordOnEnd (see examples)
+  userFacingError <- runDiscord $ def
+        { discordToken = "Bot MTIwOTk5NTU5NzgwNTkxNjIwMQ.GQcDzY.oH0BmxE2QPdQGOwDUJ0pLlCAZ4GayfLzDUHhQo"
+        , discordOnEvent = createEventHandler handleCommand
+        , discordOnLog = \s -> TIO.putStrLn s >> TIO.putStrLn ""
+        }
 
-eventHandler :: Event -> DiscordHandler ()
-eventHandler event = case event of
-    MessageCreate m -> when (isPrivateMsg m && not (fromBot m)) $ do
-        let input = (userIdFromMessage m, messageContent m)
-        let output = CommandCenter.handle input
+  TIO.putStrLn userFacingError
 
-        threadDelay (2 * 10^6) -- REMOVE? 2-second delay
-        void $ restCall (R.CreateMessage (messageChannelId m) output)
-    _ -> return ()
 
 
 -- Extract the user ID from a message
