@@ -132,13 +132,13 @@ showB b = T.intercalate "\n" (topMargin : boardRows ++ [bottomMargin])
         T.singleton (
             case lookupB (x, y) b of
                 Left _ -> '_'  --this error can't occur here but we have to handle it
-                Right maybePiece -> pieceToChar2 maybePiece
+                Right maybePiece -> pieceToChar maybePiece
         ) <> " " | x <- [0..7]]
 
 
 
-makeMove' :: Move -> Board -> Maybe Board
-makeMove' Move {old_square=start, new_square=end} board =
+makeMove :: Move -> Board -> Maybe Board
+makeMove Move {old_square=start, new_square=end} board =
   case lookupB start board of
     Left _ -> Nothing  --Illegal coordinates are always illegal moves
     Right Nothing -> Nothing  --No piece at the start square
@@ -149,8 +149,8 @@ makeMove' Move {old_square=start, new_square=end} board =
 
 
 -- Applies a move to the board if the move is legal
-makeMove :: Move -> Board -> Maybe Board
-makeMove move board =
+makeMove' :: Move -> Board -> Maybe Board
+makeMove' move board =
     if is_legal move board then
         let 
             boardWithoutOldPiece = clear (old_square move) board

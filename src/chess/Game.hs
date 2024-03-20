@@ -1,6 +1,6 @@
 module Chess.Game where
 
-import Chess.Board (Board, Color(..), Move(..), Piece(..), makeMove', startingBoard, Square, lookupB)
+import Chess.Board (Board, Color(..), Move(..), Piece(..), makeMove, startingBoard, Square, lookupB)
 import Data.Maybe (isJust)
 
 
@@ -47,7 +47,7 @@ move start end g@(ChessGame{board=b}) = case lookupB start b of
 
 move' :: Move -> ChessGame -> ChessGame
 move' m@(Move {piece = Piece {color = pc}}) g@(ChessGame {board = b, toPlay = ON gc})
-    | gc == pc = case makeMove' m b of
+    | gc == pc = case makeMove m b of
         Just movedBoard -> g {board = movedBoard, toPlay = ON (oppositeColor gc), updated = True}
         Nothing -> g {updated = False}
     | otherwise = g {updated = False}

@@ -7,7 +7,7 @@ import qualified Data.Map as M
 import qualified Data.Text as T
 import Discord.Types (UserId)
 import Parsing.ChessParser (parseInput, ChessCommand(..))
-import Chess.Board (Board, Move, startingBoard, makeMove')
+import Chess.Board (Board, Move, startingBoard)
 import Data.Maybe (isNothing)
 import Chess.Game
 
