@@ -133,7 +133,7 @@ showB b = T.intercalate "\n" (topMargin : boardRows ++ [bottomMargin])
         T.singleton (
             case lookupB (x, y) b of
                 Left _ -> '_'  --this error can't occur here but we have to handle it
-                Right maybePiece -> pieceToChar maybePiece
+                Right maybePiece -> pieceToChar2 maybePiece
         ) <> " " | x <- [0..7]]
 
 
