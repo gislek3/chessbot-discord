@@ -128,16 +128,11 @@ showB b = T.intercalate "\n" (topMargin : boardRows ++ [bottomMargin])
 
     boardRows = [T.pack (show (8 - y)) <> " " <> rowToString y <> " " <> T.pack (show (8 - y)) | y <- [0..7]]
 
-    -- Helper to convert Right value to Maybe, ignoring Left as it shouldn't occur here
-    rightToMaybe :: Either a b -> Maybe b
-    rightToMaybe (Right val) = Just val
-    rightToMaybe _ = Nothing
-
     rowToString :: Int -> T.Text
     rowToString y = T.concat [
         T.singleton (
             case lookupB (x, y) b of
-                Left errMsg -> '?'  -- Handle OOB error, which shouldn't occur in this context
+                Left _ -> '_'  --this error can't occur here but we have to handle it
                 Right maybePiece -> pieceToChar maybePiece
         ) <> " " | x <- [0..7]]
 
@@ -145,10 +140,10 @@ showB b = T.intercalate "\n" (topMargin : boardRows ++ [bottomMargin])
 makeMove' :: Square -> Square -> Board -> Maybe Board
 makeMove' start end board =
   case lookupB start board of
-    Left errMsg -> Nothing  -- Handle the OOB error by ignoring the move or logging the error as needed
-    Right Nothing -> Nothing  -- No piece at the start square
-    Right (Just p) ->
-      -- Attempt to make the move; if successful, return the new board state
+    Left _ -> Nothing  --Illegal coordinates are always illegal moves
+    Right Nothing -> Nothing  --No piece at the start square
+    Right (Just p) -> --Start square contains a piece, attempt to make move
+      --return new board if successful, otherwise Nothing
       makeMove (Move p start end) board
 
 
