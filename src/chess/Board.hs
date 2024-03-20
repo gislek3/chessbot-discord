@@ -2,13 +2,11 @@
 
 module Chess.Board where
 
-{-
-TODO: divide into multiple files.
 
-I only want board logic here, then piece/move logic can be elsehwere
--}
+--Local imports
+import Chess.Piece (Piece)
 
-
+--Other imports
 import qualified Data.Map as M
 import Data.Map (lookup)
 import Data.Maybe (fromJust, isNothing)
@@ -16,26 +14,11 @@ import qualified Data.Text as T
 import qualified Data.Text.IO as TIO
 
 
--- Define the Color of pieces
-data Color = White | Black deriving (Show, Eq)
-
--- Define the Type of pieces
-data PieceType = Pawn | Knight | Bishop | Rook | Queen | King
-    deriving (Show, Eq)
-
--- Define a Piece as a combination of PieceType and Color
-data Piece = Piece { pieceType :: PieceType, color :: Color }
-    deriving (Show, Eq)
-
 -- Define a Square as a wrapper around (Int, Int)
 type Square = (Int, Int)
 
 -- Define the ChessBoard as a map from Square to Maybe Piece
 type Board = M.Map Square (Maybe Piece)
-
--- A move consists of a Piece making a move and the square it is moving to
-data Move = Move {piece :: Piece, old_square :: Square, new_square :: Square}
-    deriving (Show, Eq)
 
 -- Initialize an empty chess board
 empty :: Board
