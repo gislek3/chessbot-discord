@@ -6,14 +6,14 @@ import Text.Megaparsec
 import Text.Megaparsec.Char
 import Data.Void
 import Data.Text (Text, pack)
-import Chess.Board (Square)
+import Chess.Board (Square, Move)
 import Control.Monad (void, when)
 
 -- Define a type for the parser; using Void for simplicity as we don't have custom error types here.
 type Parser = Parsec Void Text
 
 data ChessCommand
-  = MoveCmd Square Square 
+  = MoveCmd Square Square
   | FlipCmd
   | ResignCmd
   deriving (Show, Eq)

@@ -25,6 +25,7 @@ import qualified Data.Map as M
 import Chess.Board
 import Command.GameHandler
 import UnliftIO (liftIO)
+import Chess.Game
 
 
 
@@ -44,8 +45,8 @@ createEventHandler handleCommand = \event -> case event of
     let inputText = messageContent m
     result <- liftIO $ handleCommand userId inputText
     let response = case result of
-                      CommandResult outcome msg board ->
-                        msg <> showB board
+                      CommandResult outcome msg g@(ChessGame{board=b}) ->
+                        msg <> showB b
     void $ restCall (R.CreateMessage (messageChannelId m) response)
   _ -> return ()
 

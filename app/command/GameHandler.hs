@@ -9,15 +9,16 @@ import Discord.Types (UserId)
 import Parsing.ChessParser (parseInput, ChessCommand(..))
 import Chess.Board (Board, Move, startingBoard, makeMove')
 import Data.Maybe (isNothing)
+import Chess.Game
 
-type GameRegistry = TVar (M.Map UserId Board)
+type GameRegistry = TVar (M.Map UserId ChessGame)
 data CommandOutcome = Success | LegalMove | IllegalMove | Invalid deriving (Show, Eq)
 
 -- CommandResult might include the outcome, a message for the user, and optionally the current state of the board.
 data CommandResult = CommandResult {
     outcome :: CommandOutcome,
     message :: T.Text,
-    board :: Board  -- The current state of the board, if applicable
+    game :: ChessGame  -- The current state of the board, if applicable
 } deriving (Show, Eq)
 
 {- 
@@ -44,31 +45,32 @@ setupGameHandler :: GameRegistry -> (UserId -> T.Text -> IO CommandResult)
 setupGameHandler gameRegistry = \userId inputText ->
   atomically $ do
     registry <- readTVar gameRegistry
-    let board = M.findWithDefault startingBoard userId registry
+    let game = M.findWithDefault defaultStart userId registry
     -- Attempt to parse the input. If parsing fails, return the current board state with an error message.
     case parseInput inputText of
-      Left _ -> return $ CommandResult Invalid "Invalid command" board
+      Left _ -> return $ CommandResult Invalid "Invalid command" game
       Right command -> do
-        let commandResult = processCommand command board
+        let commandResult = processCommand command game
         case commandResult of
           -- Only update the game registry if the command was processed successfully.
-          CommandResult Success _ newBoard -> do
-            let updatedRegistry = M.insert userId newBoard registry
+          CommandResult Success _ updatedGame -> do
+            let updatedRegistry = M.insert userId updatedGame registry
             writeTVar gameRegistry updatedRegistry
             return commandResult
           -- For outcomes other than Success, do not update the registry.
           _ -> return commandResult
 
 
-processCommand :: ChessCommand -> Board -> CommandResult
-processCommand command board =
+processCommand :: ChessCommand -> ChessGame -> CommandResult
+processCommand command game =
   case command of
-    MoveCmd start end ->
-      case makeMove' start end board of
-        Nothing -> CommandResult IllegalMove "NOT OK" board
-        Just newBoard -> CommandResult Success "OK" newBoard
+    MoveCmd start end -> let attempt = move start end game in
+      if updated attempt
+        then CommandResult Success "OK" attempt
+      else CommandResult IllegalMove "NOT OK" game
+
     ResignCmd ->
       -- Handle resignation, possibly resetting the board to starting state or marking the game as finished
-      CommandResult Success "Game over, you have resigned." board
+      CommandResult Success "Game over, you have resigned." game
     
-    _ -> CommandResult Invalid "Invalid command submitted." board
+    _ -> CommandResult Invalid "Invalid command submitted." game

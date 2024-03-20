@@ -17,8 +17,7 @@ import qualified Data.Text.IO as TIO
 
 
 -- Define the Color of pieces
-data Color = White | Black
-    deriving (Show, Eq)
+data Color = White | Black deriving (Show, Eq)
 
 -- Define the Type of pieces
 data PieceType = Pawn | Knight | Bishop | Rook | Queen | King
@@ -137,16 +136,15 @@ showB b = T.intercalate "\n" (topMargin : boardRows ++ [bottomMargin])
         ) <> " " | x <- [0..7]]
 
 
-makeMove' :: Square -> Square -> Board -> Maybe Board
-makeMove' start end board =
+
+makeMove' :: Move -> Board -> Maybe Board
+makeMove' Move {old_square=start, new_square=end} board =
   case lookupB start board of
     Left _ -> Nothing  --Illegal coordinates are always illegal moves
     Right Nothing -> Nothing  --No piece at the start square
     Right (Just p) -> --Start square contains a piece, attempt to make move
       --return new board if successful, otherwise Nothing
       makeMove (Move p start end) board
-
-
 
 
 
