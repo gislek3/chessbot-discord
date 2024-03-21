@@ -2,16 +2,25 @@
 
 module Command.GameHandler where
 
+--Discord imports
+import Discord.Types (UserId)
+
+--Other imports
 import Control.Concurrent.STM
 import qualified Data.Map as M
 import qualified Data.Text as T
-import Discord.Types (UserId)
+import Data.Maybe (isNothing)
+
+--Local imports
 import Parsing.ChessParser (parseInput, ChessCommand(..))
 import Chess.Board (Board, Move, startingBoard)
-import Data.Maybe (isNothing)
 import Chess.Game
 
+
+--TVARs from STM to support atomic memory transactions, creating a functional and thread-safe global registry
 type GameRegistry = TVar (M.Map UserId ChessGame)
+
+--High-levelled status enum that summarizes the outcome of a ChessCommand
 data CommandOutcome = Success | LegalMove | IllegalMove | Invalid deriving (Show, Eq)
 
 --Composite of a result: The enumeric outcome of the ChessCommand, a human-friendly summary, and the resulting game of chess
@@ -21,10 +30,10 @@ data CommandResult = CommandResult {
     game :: ChessGame 
 } deriving (Show, Eq)
 
---TODO: document
+--Create a command handler which recieves user input, parses and executes commands on games
 setupGameHandler :: GameRegistry -> (UserId -> T.Text -> IO CommandResult)
 setupGameHandler gameRegistry = \userId inputText ->
-  atomically $ do --as we want to read the registry, we need an atomic action
+  atomically $ do --as we want to read the shared registry, we need an atomic action
     registry <- readTVar gameRegistry --read the registry
     let game = M.findWithDefault defaultStart userId registry --find the user's session
 
@@ -36,7 +45,7 @@ setupGameHandler gameRegistry = \userId inputText ->
         case commandResult of
           CommandResult Success _ updatedGame -> do --only write on success
             let updatedRegistry = M.insert userId updatedGame registry
-            writeTVar gameRegistry updatedRegistry --we still have exclusive access
+            writeTVar gameRegistry updatedRegistry --still atomic, so we can write
             return commandResult
           _ -> return commandResult --
 
