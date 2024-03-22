@@ -20,6 +20,9 @@ type Square = (Int, Int)
 -- Define the ChessBoard as a map from Square to Maybe Piece
 type Board = M.Map Square (Maybe Piece)
 
+{- instance Show Board where
+  show = showB -}
+
 -- Initialize an empty chess board
 empty :: Board
 empty = M.fromList [((i, j), Nothing) | i <- [0..7], j <- [0..7]]
