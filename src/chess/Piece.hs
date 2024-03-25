@@ -12,6 +12,9 @@ need to figure that shit out first before I can do move logic
 --Pieces can either be black or white
 data Color = White | Black deriving (Show, Eq)
 
+oppositeColor :: Color -> Color
+oppositeColor c = if c==White then Black else White
+
 
 --Standard pieces
 data PieceType = Knight | Bishop | Rook | Queen | Pawn | King
@@ -35,6 +38,9 @@ startP pt c = Piece pt c False
 --A move consists of a Piece making a move and the square it is moving to
 data Move = Move {piece :: Piece, old_square :: Square, new_square :: Square}
     deriving (Show, Eq)
+
+instance Ord Move where
+    compare (Move _ o1 n1) (Move _ o2 n2) = compare (o1, n1) (o2, n2)
 
 type Delta = (Int, Int)
 

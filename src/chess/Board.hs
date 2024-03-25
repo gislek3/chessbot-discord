@@ -37,7 +37,6 @@ clear :: Square -> Board -> Board
 clear square = M.insert square Nothing
 
 
-
 -- TODO: Initialize the initial board, in the starting position
 startingBoard :: Board
 startingBoard = foldr place empty startingPieces
@@ -159,6 +158,14 @@ getAllMoves :: Board -> S.Set Move
 getAllMoves _ = S.empty
 
 --Return all legal moves for a given piece on a board
-getMoves :: Piece -> Board -> S.Set Move
-getMoves _ _ = S.empty
+getMoves :: PositionedPiece -> Board -> S.Set Move
+getMoves (piece@(Piece { pieceType = pt, color = pc, hasMoved = hm }), (row, col)) board =
+    let pattern = getMovementPattern pt
+        in S.empty
 
+getNextSquare :: Delta -> Square -> Maybe Square
+getNextSquare (rowD, colD) (row, col) = if isValidSquare(row+rowD, col+colD) then Just (row+rowD, col+colD)  else Nothing
+
+-- Handle pawn moves separately due to their unique rules
+pawnMoves :: Piece -> Square -> Board -> [Move]
+pawnMoves piece@(Piece Pawn color hasMoved) square@(row, col) board = [] -- Your pawn specific

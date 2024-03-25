@@ -53,6 +53,3 @@ move' m@(Move {piece = Piece {color = pc}}) g@(ChessGame {board = b, toPlay = ON
         Nothing -> g {updated = False}
     | otherwise = g {updated = False}
 move' _ g = g {updated = False}
-
-oppositeColor :: Color -> Color
-oppositeColor c = if c==White then Black else White
