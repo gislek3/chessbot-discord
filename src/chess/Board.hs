@@ -45,17 +45,17 @@ startingBoard = foldr place empty startingPieces
     -- List of pieces with their starting positions
     startingPieces :: [(Square, Piece)]
     startingPieces =
-      [ ((0, 0), Piece Rook Black), ((7, 0), Piece Rook Black),
-        ((1, 0), Piece Knight Black), ((6, 0), Piece Knight Black),
-        ((2, 0), Piece Bishop Black), ((5, 0), Piece Bishop Black),
-        ((3, 0), Piece Queen Black), ((4, 0), Piece King Black)
+      [ ((0, 0), startP Rook Black), ((7, 0), startP Rook Black),
+        ((1, 0), startP Knight Black), ((6, 0), startP Knight Black),
+        ((2, 0), startP Bishop Black), ((5, 0), startP Bishop Black),
+        ((3, 0), startP Queen Black), ((4, 0), startP King Black)
       ]
-      ++ [((x, 1), Piece Pawn Black) | x <- [0..7]]
-      ++ [((x, 6), Piece Pawn White) | x <- [0..7]]
-      ++ [  ((0, 7), Piece Rook White), ((7, 7), Piece Rook White),
-            ((1, 7), Piece Knight White), ((6, 7), Piece Knight White),
-            ((2, 7), Piece Bishop White), ((5, 7), Piece Bishop White),
-            ((3, 7), Piece Queen White), ((4, 7), Piece King White)
+      ++ [((x, 1), startP Pawn Black) | x <- [0..7]]
+      ++ [((x, 6), startP Pawn White) | x <- [0..7]]
+      ++ [ ((0, 7), startP Rook White), ((7, 7), startP Rook White),
+           ((1, 7), startP Knight White), ((6, 7), startP Knight White),
+           ((2, 7), startP Bishop White), ((5, 7), startP Bishop White),
+           ((3, 7), startP Queen White), ((4, 7), startP King White)
       ]
 
 
@@ -63,35 +63,35 @@ startingBoard = foldr place empty startingPieces
 -- NOTE: black and white pieces are swapped, it just makes sense
 pieceToChar :: Maybe Piece -> Char
 pieceToChar p = case p of
-    Just (Piece Pawn White) -> '\x265F'
-    Just (Piece Rook White) -> '\x265C'
-    Just (Piece Knight White) -> '\x265E'
-    Just (Piece Bishop White) -> '\x265D'
-    Just (Piece Queen White) -> '\x265B'
-    Just (Piece King White) -> '\x265A'
-    Just (Piece Pawn Black) -> '\x2659'
-    Just (Piece Rook Black) -> '\x2656'
-    Just (Piece Knight Black) -> '\x2658'
-    Just (Piece Bishop Black) -> '\x2657'
-    Just (Piece Queen Black) -> '\x2655'
-    Just (Piece King Black) -> '\x2654'
+    Just (Piece Pawn White _) -> '\x265F'
+    Just (Piece Rook White _) -> '\x265C'
+    Just (Piece Knight White _) -> '\x265E'
+    Just (Piece Bishop White _) -> '\x265D'
+    Just (Piece Queen White _) -> '\x265B'
+    Just (Piece King White _) -> '\x265A'
+    Just (Piece Pawn Black _) -> '\x2659'
+    Just (Piece Rook Black _) -> '\x2656'
+    Just (Piece Knight Black _) -> '\x2658'
+    Just (Piece Bishop Black _) -> '\x2657'
+    Just (Piece Queen Black _) -> '\x2655'
+    Just (Piece King Black _) -> '\x2654'
     Nothing -> '\x2002'  -- Space for empty square
 
 
 pieceToChar2 :: Maybe Piece -> Char
 pieceToChar2 p = case p of
-    Just (Piece Pawn White) -> 'P'
-    Just (Piece Rook White) -> 'R'
-    Just (Piece Knight White) -> 'N'
-    Just (Piece Bishop White) -> 'B'
-    Just (Piece Queen White) -> 'Q'
-    Just (Piece King White) -> 'K'
-    Just (Piece Pawn Black) -> 'p'
-    Just (Piece Rook Black) -> 'r'
-    Just (Piece Knight Black) -> 'n'
-    Just (Piece Bishop Black) -> 'b'
-    Just (Piece Queen Black) -> 'q'
-    Just (Piece King Black) -> 'k'
+    Just (Piece Pawn White _) -> 'P'
+    Just (Piece Rook White _) -> 'R'
+    Just (Piece Knight White _) -> 'N'
+    Just (Piece Bishop White _) -> 'B'
+    Just (Piece Queen White _) -> 'Q'
+    Just (Piece King White _) -> 'K'
+    Just (Piece Pawn Black _) -> 'p'
+    Just (Piece Rook Black _) -> 'r'
+    Just (Piece Knight Black _) -> 'n'
+    Just (Piece Bishop Black _) -> 'b'
+    Just (Piece Queen Black _) -> 'q'
+    Just (Piece King Black _) -> 'k'
     Nothing -> ' '  -- Space for empty square
 
 

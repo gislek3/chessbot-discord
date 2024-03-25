@@ -14,16 +14,23 @@ data Color = White | Black deriving (Show, Eq)
 
 
 --Standard pieces
-data PieceType = Pawn | Knight | Bishop | Rook | Queen | King
+data PieceType = Knight | Bishop | Rook | Queen | Pawn | King
     deriving (Show, Eq)
 
 type Square = (Int, Int)
 
 --A piece is defined as a composite type of its piecetype and its color
-data Piece = Piece { pieceType :: PieceType, color :: Color }
+data Piece = Piece { pieceType :: PieceType, color :: Color, hasMoved :: Bool }
     deriving (Show, Eq)
 
 type PositionedPiece = (Piece, Square)
+
+--Get the starting version of a given colored piece. Allows shortening "Piece pt c False", since all pieces start unmoved
+startP :: PieceType -> Color -> Piece 
+startP pt c = Piece pt c False
+
+---------------------------------------------------------------------------------------------------------
+
 
 --A move consists of a Piece making a move and the square it is moving to
 data Move = Move {piece :: Piece, old_square :: Square, new_square :: Square}
@@ -36,6 +43,7 @@ data MovementPattern = MovementPattern {
     continous :: Bool
 }
 
+
 getMovementPattern :: PieceType -> MovementPattern
 getMovementPattern pt = case pt of
     Rook -> MovementPattern {deltas=[(-1, 0), (1, 0), (0, 1), (0, 1)], continous=True}
@@ -43,5 +51,5 @@ getMovementPattern pt = case pt of
     Knight -> MovementPattern{deltas=[(-1, 2), (1, 2), (-1, -2), (1, -2), (-2, 1), (-2, -1), (2, -1), (2, 1)], continous=False}
     Queen -> MovementPattern{deltas=[(-1, -1), (-1, 0), (-1, 1), (0, -1), (0, 1), (1, -1), (1, 0), (1, 1)], continous=True}
     King -> MovementPattern{deltas=[(-1, -1), (-1, 0), (-1, 1), (0, -1), (0, 1), (1, -1), (1, 0), (1, 1)], continous=False}
-    _ -> MovementPattern {deltas=[], continous=False}
+    Pawn -> error "getMovementPattern called with pawn as argument, please use ????? instead."
 
