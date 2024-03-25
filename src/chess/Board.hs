@@ -4,7 +4,7 @@ module Chess.Board where
 
 
 --Local imports
-import Chess.Piece (Piece)
+import Chess.Piece
 
 --Other imports
 import qualified Data.Map as M
@@ -12,10 +12,11 @@ import Data.Map (lookup)
 import Data.Maybe (fromJust, isNothing)
 import qualified Data.Text as T
 import qualified Data.Text.IO as TIO
+import qualified Data.Set as S
 
 
 -- Define a Square as a wrapper around (Int, Int)
-type Square = (Int, Int)
+
 
 -- Define the ChessBoard as a map from Square to Maybe Piece
 type Board = M.Map Square (Maybe Piece)
@@ -29,11 +30,13 @@ empty = M.fromList [((i, j), Nothing) | i <- [0..7], j <- [0..7]]
 
 -- Place a piece on the board
 place :: (Square, Piece) -> Board -> Board
-place (square, piece) board = M.insert square (Just piece) board
+place (square, piece) = M.insert square (Just piece)
 
 -- Clear a square on the board, does nothing if square is empty
 clear :: Square -> Board -> Board
-clear square board = M.insert square Nothing board
+clear square = M.insert square Nothing
+
+
 
 -- TODO: Initialize the initial board, in the starting position
 startingBoard :: Board
@@ -41,7 +44,7 @@ startingBoard = foldr place empty startingPieces
   where
     -- List of pieces with their starting positions
     startingPieces :: [(Square, Piece)]
-    startingPieces = 
+    startingPieces =
       [ ((0, 0), Piece Rook Black), ((7, 0), Piece Rook Black),
         ((1, 0), Piece Knight Black), ((6, 0), Piece Knight Black),
         ((2, 0), Piece Bishop Black), ((5, 0), Piece Bishop Black),
@@ -60,35 +63,35 @@ startingBoard = foldr place empty startingPieces
 -- NOTE: black and white pieces are swapped, it just makes sense
 pieceToChar :: Maybe Piece -> Char
 pieceToChar p = case p of
-    Just (Piece Pawn White) -> '\x265F' 
-    Just (Piece Rook White) -> '\x265C' 
-    Just (Piece Knight White) -> '\x265E' 
-    Just (Piece Bishop White) -> '\x265D' 
-    Just (Piece Queen White) -> '\x265B' 
-    Just (Piece King White) -> '\x265A' 
-    Just (Piece Pawn Black) -> '\x2659' 
-    Just (Piece Rook Black) -> '\x2656' 
-    Just (Piece Knight Black) -> '\x2658' 
-    Just (Piece Bishop Black) -> '\x2657' 
-    Just (Piece Queen Black) -> '\x2655' 
-    Just (Piece King Black) -> '\x2654' 
+    Just (Piece Pawn White) -> '\x265F'
+    Just (Piece Rook White) -> '\x265C'
+    Just (Piece Knight White) -> '\x265E'
+    Just (Piece Bishop White) -> '\x265D'
+    Just (Piece Queen White) -> '\x265B'
+    Just (Piece King White) -> '\x265A'
+    Just (Piece Pawn Black) -> '\x2659'
+    Just (Piece Rook Black) -> '\x2656'
+    Just (Piece Knight Black) -> '\x2658'
+    Just (Piece Bishop Black) -> '\x2657'
+    Just (Piece Queen Black) -> '\x2655'
+    Just (Piece King Black) -> '\x2654'
     Nothing -> '\x2002'  -- Space for empty square
 
 
 pieceToChar2 :: Maybe Piece -> Char
 pieceToChar2 p = case p of
-    Just (Piece Pawn White) -> 'P' 
-    Just (Piece Rook White) -> 'R' 
-    Just (Piece Knight White) -> 'N' 
-    Just (Piece Bishop White) -> 'B' 
-    Just (Piece Queen White) -> 'Q' 
-    Just (Piece King White) -> 'K' 
-    Just (Piece Pawn Black) -> 'p' 
-    Just (Piece Rook Black) -> 'r' 
-    Just (Piece Knight Black) -> 'n' 
-    Just (Piece Bishop Black) -> 'b' 
-    Just (Piece Queen Black) -> 'q' 
-    Just (Piece King Black) -> 'k' 
+    Just (Piece Pawn White) -> 'P'
+    Just (Piece Rook White) -> 'R'
+    Just (Piece Knight White) -> 'N'
+    Just (Piece Bishop White) -> 'B'
+    Just (Piece Queen White) -> 'Q'
+    Just (Piece King White) -> 'K'
+    Just (Piece Pawn Black) -> 'p'
+    Just (Piece Rook Black) -> 'r'
+    Just (Piece Knight Black) -> 'n'
+    Just (Piece Bishop Black) -> 'b'
+    Just (Piece Queen Black) -> 'q'
+    Just (Piece King Black) -> 'k'
     Nothing -> ' '  -- Space for empty square
 
 
@@ -138,10 +141,10 @@ makeMove Move {old_square=start, new_square=end} board =
 makeMove' :: Move -> Board -> Maybe Board
 makeMove' move board =
     if is_legal move board then
-        let 
+        let
             boardWithoutOldPiece = clear (old_square move) board
             boardWithNewPiece = place (new_square move, piece move) boardWithoutOldPiece
-        in 
+        in
             Just boardWithNewPiece
     else
         Nothing
@@ -149,4 +152,13 @@ makeMove' move board =
     -- Placeholder for the legal move checker, always returns True for now
     is_legal :: Move -> Board -> Bool
     is_legal _ _ = True
+
+
+--Return all legal moves for a given board
+getAllMoves :: Board -> S.Set Move
+getAllMoves _ = S.empty
+
+--Return all legal moves for a given piece on a board
+getMoves :: Piece -> Board -> S.Set Move
+getMoves _ _ = S.empty
 

@@ -1,6 +1,7 @@
 module Chess.Game where
 
-import Chess.Board (Board, Color(..), Move(..), Piece(..), makeMove, startingBoard, Square, lookupB)
+import Chess.Board
+import Chess.Piece
 import Data.Maybe (isJust)
 
 
