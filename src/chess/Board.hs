@@ -117,7 +117,8 @@ showB b = T.intercalate "\n" (topMargin : boardRows ++ [bottomMargin])
     topMargin = "  a b c d e f g h"
     bottomMargin = topMargin
 
-    boardRows = [T.pack (show (8 - y)) <> " " <> rowToString y <> " " <> T.pack (show (8 - y)) | y <- [0..7]]
+    -- Generate rows starting from the bottom (7 to 0)
+    boardRows = [T.pack (show (y+1)) <> " " <> rowToString y <> " " <> T.pack (show (y+1)) | y <- [7,6..0]]
 
     rowToString :: Int -> T.Text
     rowToString y = T.concat [
