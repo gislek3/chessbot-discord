@@ -13,7 +13,7 @@ import Data.Maybe (isNothing)
 
 --Local imports
 import Parsing.ChessParser (parseInput, ChessCommand(..))
-import Chess.Board (Board, Move, startingBoard)
+import Chess.Board (Board, startingBoard, Move)
 import Chess.Game
 
 

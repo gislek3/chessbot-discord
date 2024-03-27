@@ -1,2 +1,12 @@
+import Test.HUnit
+
+import ParserTest
+import GameTest
+import BoardTest
+
 main :: IO ()
-main = putStrLn "Test suite not yet implemented"
+main = do
+  _ <- runTestTT ParserTest.tests
+  _ <- runTestTT BoardTest.tests
+  _ <- runTestTT GameTest.tests
+  return ()

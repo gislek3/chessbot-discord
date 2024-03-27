@@ -53,7 +53,7 @@ createEventHandler handleCommand = \event -> case event of
 
 chessbot :: IO ()
 chessbot = do
-  gameRegistry <- atomically $ newTVar M.empty
+  gameRegistry <- newTVarIO M.empty
   let handleCommand = setupGameHandler gameRegistry
 
   userFacingError <- runDiscord $ def

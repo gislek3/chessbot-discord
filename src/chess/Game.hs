@@ -30,9 +30,9 @@ defaultStart = ChessGame {
 }
 
 swapPlayer :: ChessGame -> ChessGame
-swapPlayer game@(ChessGame { toPlay = ON color }) =
-    game { toPlay = ON (oppositeColor color), updated=True }
-swapPlayer game = game {updated=False} --Don't swap if game is inactive
+swapPlayer game@(ChessGame { toPlay = ON currColor }) =
+    game { toPlay = ON (oppositeColor currColor), updated = True }
+swapPlayer game = game {updated = False}
 
 resign :: ChessGame -> ChessGame
 resign game = game { toPlay = OFF, state = Resign, updated=True }
@@ -40,11 +40,12 @@ resign game = game { toPlay = OFF, state = Resign, updated=True }
 draw :: ChessGame -> ChessGame
 draw game = game { toPlay = OFF, state = Draw, updated=True  }
 
+--TODO: Should probably limit this function to care about whose turn it is also?
 move :: Square -> Square -> ChessGame -> ChessGame
 move start end g@(ChessGame{board=b}) = case lookupB start b of
-        Left _ -> g{updated=False}
-        Right Nothing -> g{updated=False}
-        Right (Just piece) -> move' (Move {piece=piece, old_square=start, new_square=end}) g
+        Illegal -> g{updated=False}
+        Empty -> g{updated=False}
+        Occupied occupiedPiece -> move' (Move {piece=occupiedPiece, old_square=start, new_square=end}) g
 
 move' :: Move -> ChessGame -> ChessGame
 move' m@(Move {piece = Piece {color = pc}}) g@(ChessGame {board = b, toPlay = ON gc})

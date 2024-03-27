@@ -6,7 +6,7 @@ import Text.Megaparsec
 import Text.Megaparsec.Char
 import Data.Void
 import Data.Text (Text, pack)
-import Chess.Board (Square, Move)
+import Chess.Board (Square, isValidSquare)
 import Control.Monad (void, when)
 
 -- Define a type for the parser; using Void for simplicity as we don't have custom error types here.
@@ -22,17 +22,15 @@ data ChessCommand
 fileToNum :: Char -> Int
 fileToNum file = fromEnum file - fromEnum 'a'
 
-isValidSquare :: Int -> Int -> Bool
-isValidSquare file rank = file >= 0 && file <= 7 && rank >= 0 && rank <= 7
-
 squareParser :: Parser Square
 squareParser = do
-  file <- letterChar
-  rank <- digitChar
-  let fileNum = fileToNum file
-      rankNum = read [rank] - 1
-  when (not $ isValidSquare fileNum rankNum) $ fail "Square out of bounds"
-  return (fileNum, rankNum)
+  fileChar <- letterChar
+  rankChar <- digitChar
+  let file = fromEnum fileChar - fromEnum 'a'  -- 'a' becomes 0, ..., 'h' becomes 7
+  let rank = read [rankChar] - 1  -- '1' becomes 0, ..., '8' becomes 7
+  if isValidSquare (file, rank)
+    then return (file, rank)  -- Return as (file, rank), aligning with conventional bottom-left origin
+    else fail "Square out of bounds"
 
 -- Updated parser for a chess move
 moveParser :: Parser ChessCommand
