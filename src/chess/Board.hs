@@ -117,9 +117,9 @@ showB b = "```\n" <> topMargin <> "\n" <> T.intercalate "\n" boardRows <> "\n" <
 
 
 -- Applies a move to the board if the move is legal
-makeMove :: Move -> Board -> Maybe Board
-makeMove m@(Move{piece=_,old_square=start,new_square=stop}) board =
-    if (isValidSquare start && isValidSquare stop) && (is_legal start stop board) then
+makeMove' :: Move -> Bool -> Board -> Maybe Board
+makeMove' m@(Move{piece=movingPiece,old_square=start,new_square=stop}) forced board =
+    if (isValidSquare start && isValidSquare stop) && is_legal start stop board then
         let
             boardWithoutOldPiece = clear (old_square m) board
             boardWithNewPiece = place (new_square m) (piece m) boardWithoutOldPiece
@@ -128,11 +128,29 @@ makeMove m@(Move{piece=_,old_square=start,new_square=stop}) board =
     else
         Nothing
   where
-    is_legal one two b = case (lookupB start b) of
-      Occupied p -> S.member (Move p one two) (getMoves (p, one) b)
+    is_legal :: Square -> Square -> Board -> Bool
+    is_legal one two b = forced || case lookupB start b of
+      Occupied p -> do
+        let movingPieceMoves = getMoves (p, one) b
+        let forceMoveOnBoard = makeMove' m True board
+        isJust forceMoveOnBoard && (S.member (Move p one two) movingPieceMoves && not (kingIsInCheck (pieceColor movingPiece) (fromJust forceMoveOnBoard)))
       Empty -> False
       Illegal -> error "Illegal squares passed the initial check."
-    
+
+makeMove :: Move -> Board -> Maybe Board
+makeMove m = makeMove' m False
+
+
+kingIsInCheck :: Color -> Board -> Bool
+kingIsInCheck c b = not (null listOfAllTargets)
+  where
+    listOfAllTargets = [lookupB (new_square m) b | m <- S.toList (getAllColorMoves (oppositeColor c) b),
+      case lookupB (new_square m) b of
+        Occupied (Piece King someColor _) -> someColor==c
+        _ -> False
+      ]
+
+
 
 
 --Return all legal moves for a given board

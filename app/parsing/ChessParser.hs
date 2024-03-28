@@ -9,6 +9,12 @@ import Data.Text (Text)
 import Chess.Board (Square, isValidSquare)
 import Data.Char (toLower)
 
+{-
+TODO:
+- Combine all the "simple parsers" into a single one
+-}
+
+
 --Define parser type; using Void for simplicity as we don't have custom error types here.
 type Parser = Parsec Void Text
 
