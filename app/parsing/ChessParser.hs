@@ -18,6 +18,7 @@ data ChessCommand
   | FlipCmd
   | ResignCmd
   | ShowCmd
+  | ResetCmd
   deriving (Show, Eq)
 
 
@@ -54,9 +55,13 @@ resignParser = string' "resign" >> return ResignCmd
 showParser :: Parser ChessCommand
 showParser = (string' "show" <|> string' "print") >> return ShowCmd
 
+--A parser for the "reset" command
+resetParser :: Parser ChessCommand
+resetParser = (string' "reset" <|> string' "start over") >> return ResetCmd
+
 -- Combine all parsers to parse any of the commands.
 commandParser :: Parser ChessCommand
-commandParser = try moveParser <|> try flipParser <|> resignParser <|> showParser
+commandParser = try moveParser <|> try flipParser <|> resignParser <|> showParser <|> resetParser
 
 -- Pparse input text into a ChessCommand.
 parseInput :: Text -> Either (ParseErrorBundle Text Void) ChessCommand

@@ -21,7 +21,7 @@ type GameRegistry = TVar (M.Map UserId ChessGame)
 --High-levelled status enum that summarizes the outcome of a ChessCommand
 data CommandOutcome = Success SuccessType | Fail FailType  deriving (Show, Eq)
 
-data SuccessType = LegalMove | Check | Resign | Print deriving (Show, Eq)
+data SuccessType = LegalMove | Check | Resign | Print | Reset deriving (Show, Eq)
 data FailType = IllegalMove | Invalid deriving (Show, Eq)
 
 --Composite of a result: The enumeric outcome of the ChessCommand, a human-friendly summary, and the resulting game of chess
@@ -63,3 +63,4 @@ processCommand command game =
     ResignCmd -> CommandResult (Success Resign) "Game over, you have resigned." game
     FlipCmd -> CommandResult (Fail Invalid) "That feature is not yet implemented." game
     ShowCmd -> CommandResult (Success Print) "Here's the current board:" game
+    ResetCmd -> CommandResult (Success Reset) "Okay, I reset the game for you." (defaultStart)
