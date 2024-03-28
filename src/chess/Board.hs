@@ -154,38 +154,38 @@ getNextSquare (rowD, colD) (row, col) = if isValidSquare (row+rowD, col+colD) th
 
 -- Update the followDelta function to consider continuous movement
 followDelta :: Piece -> Board -> Square -> Delta -> Color -> Bool -> S.Set Move
-followDelta piece board start delta c continuous = go start
+followDelta p board start delta c continuous = go start
   where
     go sq
       | not continuous = case getNextSquare delta sq of
           Just nextSq -> case lookupB nextSq board of
             Illegal -> S.empty
-            Empty -> S.insert (Move piece start nextSq) S.empty
+            Empty -> S.insert (Move p start nextSq) S.empty
             Occupied (Piece _ colorAtSquare _) ->
-              if colorAtSquare /= c then S.singleton (Move piece start nextSq) else S.empty
+              if colorAtSquare /= c then S.singleton (Move p start nextSq) else S.empty
           Nothing -> S.empty
       | otherwise = case getNextSquare delta sq of
           Nothing -> S.empty
           Just nextSq -> case lookupB nextSq board of
             Illegal -> S.empty
-            Empty -> S.insert (Move piece start nextSq) (go nextSq)
+            Empty -> S.insert (Move p start nextSq) (go nextSq)
             Occupied (Piece _ colorAtSquare _) ->
-              if colorAtSquare /= c then S.singleton (Move piece start nextSq) else S.empty
+              if colorAtSquare /= c then S.singleton (Move p start nextSq) else S.empty
 
 type PositionedPiece = (Piece, Square)
 
 -- Adjust getMoves to extract deltas from MovementPattern and handle continuous movement
 getPawnMoves :: PositionedPiece -> Board -> S.Set Move
-getPawnMoves ((piece@(Piece {pieceType = Pawn, pieceColor = c, hasMoved = hm}), (x, y))) board =
+getPawnMoves ((p@(Piece {pieceType = Pawn, pieceColor = c, hasMoved = hm}), (x, y))) board =
   let
     -- Calculate forward moves depending on color and whether the pawn has moved before
     forwardDeltas = if c == White then [(0, 1)] ++ if not hm then [(0, 2)] else [] else [(0, -1)] ++ if not hm then [(0, -2)] else []
-    forwardMoves = [(Move piece (x, y) (x + dx, y + dy)) | (dx, dy) <- forwardDeltas, lookupB (x + dx, y + dy) board == Empty]
+    forwardMoves = [(Move p (x, y) (x + dx, y + dy)) | (dx, dy) <- forwardDeltas, lookupB (x + dx, y + dy) board == Empty]
 
     -- Calculate attack moves
     attackDeltas = if c == White then [(1, 1), (-1, 1)] else [(1, -1), (-1, -1)]
-    attackMoves = [(Move piece (x, y) (x + dx, y + dy)) | (dx, dy) <- attackDeltas, case lookupB (x + dx, y + dy) board of
-                      Occupied p -> pieceColor p == oppositeColor c
+    attackMoves = [(Move p (x, y) (x + dx, y + dy)) | (dx, dy) <- attackDeltas, case lookupB (x + dx, y + dy) board of
+                      Occupied pAtSquare -> pieceColor pAtSquare == oppositeColor c
                       _ -> False]
 
   in S.fromList (forwardMoves ++ attackMoves)
@@ -194,10 +194,10 @@ getPawnMoves _ _= error "getPawnMoves called with non-pawn argument"
 
 
 getMoves :: PositionedPiece -> Board -> S.Set Move
-getMoves (piece@(Piece {pieceType = pt, pieceColor = c}), position) board =
-    if pt==Pawn then getPawnMoves (piece, position) board else
+getMoves (p@(Piece {pieceType = pt, pieceColor = c}), position) board =
+    if pt==Pawn then getPawnMoves (p, position) board else
       let movementPattern = getMovementPattern pt
           deltasList = deltas movementPattern
           isContinuous = continous movementPattern
-      in S.unions [followDelta piece board position delta c isContinuous | delta <- deltasList]
+      in S.unions [followDelta p board position delta c isContinuous | delta <- deltasList]
 
