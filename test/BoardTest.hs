@@ -4,7 +4,9 @@ import Test.HUnit
 import TestHelpers
 import Chess.Board
 import Chess.Piece
-import Data.Maybe (isJust, isNothing)
+import Data.Maybe (isJust, fromJust, isNothing)
+import qualified Data.Set as S
+import qualified Data.Map as M
 
 b :: Board
 b = startingBoard
@@ -90,11 +92,36 @@ testMove = TestList
 --TODO: test move function for different pieces
 --TODO: test move function that specifically checks that you don't put your own king in check, includes directly and indirectly
 
+--TODO: integrate black pawns
+testGetMovesPawn :: Test
+testGetMovesPawn = TestList [
+  TestCase $ do --Normal forward moves work
+    let e2pos = (4, 1)
+    let e2piece = fromJust $ M.lookup e2pos b
+    let possibleMoves = getMoves (e2piece, e2pos) b
+    let expectedMoves = S.fromList [Move e2piece (4,1) (4,2), Move e2piece (4,1) (4,3)]
+    assertEqual "Case #1: Pawn at e2 can move to e3 and e4" expectedMoves possibleMoves,
+  TestCase $ do --Attacking diagonals work, and they don't override normal forward moves.
+    let e2pos = (4, 1)
+    let attackablesAdded = place (5,2) (startP Rook Black) (place (3,2) (startP Bishop Black) (place (2,3) (startP Pawn Black) b))
+    let e2piece = fromJust $ M.lookup e2pos $ attackablesAdded
+    let possibleMoves = getMoves (e2piece, e2pos) attackablesAdded
+    let expectedMoves = S.fromList [Move e2piece (4,1) (4,2), Move e2piece (4,1) (4,3), Move e2piece (4,1) (5,2), Move e2piece (4,1) (3,2)]
+    assertEqual "Case #2: Pawn at e2 can also attack its diagonals" expectedMoves possibleMoves,
+  TestCase $ do --Double move is only valid once
+    let e2pos = (4, 1)
+    let e2piece = fromJust $ M.lookup e2pos b
+    let movedOnce = makeMove (Move e2piece (4,1) (4,2)) b
+    assertBool "Case #3a: Initial move to e3 is valid" (isJust movedOnce)
+  ]
+
+
 
 tests :: Test
 tests = TestList [
     TestLabel "testLookup" testLookup,
     TestLabel "testClear" testClear,
     TestLabel "testPlace" testPlace,
-    TestLabel "testMove" testMove
+    TestLabel "testMove" testMove,
+    TestLabel "getMovesPawn" testGetMovesPawn
     ]

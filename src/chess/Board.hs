@@ -1,12 +1,11 @@
 {-# LANGUAGE OverloadedStrings #-}  -- allows "string literals" to be Text
 
-module Chess.Board where
+module Chess.Board (module Chess.Board) where
 
 
 --Local imports
 import Chess.Piece
     ( Delta,
-      getPawnMovement,
       Piece(Piece, pieceColor, pieceType, hasMoved),
       PieceType(Pawn, Rook, Knight, Bishop, Queen, King),
       Color(..),
@@ -177,7 +176,7 @@ type PositionedPiece = (Piece, Square)
 
 -- Adjust getMoves to extract deltas from MovementPattern and handle continuous movement
 getPawnMoves :: PositionedPiece -> Board -> S.Set Move
-getPawnMoves ((piece@(Piece {pieceType = Pawn, pieceColor = c, hasMoved = hm}), position@(x, y))) board =
+getPawnMoves ((piece@(Piece {pieceType = Pawn, pieceColor = c, hasMoved = hm}), (x, y))) board =
   let
     -- Calculate forward moves depending on color and whether the pawn has moved before
     forwardDeltas = if c == White then [(0, 1)] ++ if not hm then [(0, 2)] else [] else [(0, -1)] ++ if not hm then [(0, -2)] else []
@@ -190,11 +189,15 @@ getPawnMoves ((piece@(Piece {pieceType = Pawn, pieceColor = c, hasMoved = hm}), 
                       _ -> False]
 
   in S.fromList (forwardMoves ++ attackMoves)
+getPawnMoves _ _= error "getPawnMoves called with non-pawn argument"
+
+
 
 getMoves :: PositionedPiece -> Board -> S.Set Move
 getMoves (piece@(Piece {pieceType = pt, pieceColor = c}), position) board =
-    let movementPattern = getMovementPattern pt
-        deltasList = deltas movementPattern
-        isContinuous = continous movementPattern
-    in S.unions [followDelta piece board position delta c isContinuous | delta <- deltasList]
+    if pt==Pawn then getPawnMoves (piece, position) board else
+      let movementPattern = getMovementPattern pt
+          deltasList = deltas movementPattern
+          isContinuous = continous movementPattern
+      in S.unions [followDelta piece board position delta c isContinuous | delta <- deltasList]
 

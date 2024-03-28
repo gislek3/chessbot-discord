@@ -1,13 +1,12 @@
 {-# LANGUAGE OverloadedStrings #-}
 
-module Parsing.ChessParser where
+module Parsing.ChessParser (module Parsing.ChessParser) where
 
 import Text.Megaparsec
 import Text.Megaparsec.Char
 import Data.Void
-import Data.Text (Text, pack)
+import Data.Text (Text)
 import Chess.Board (Square, isValidSquare)
-import Control.Monad (void, when)
 
 --Define parser type; using Void for simplicity as we don't have custom error types here.
 type Parser = Parsec Void Text

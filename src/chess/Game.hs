@@ -1,8 +1,7 @@
-module Chess.Game where
+module Chess.Game (module Chess.Game) where
 
 import Chess.Board
 import Chess.Piece
-import Data.Maybe (isJust)
 
 
 data GameState = Resigned | Drawn | Active deriving (Show, Eq)
