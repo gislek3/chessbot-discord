@@ -7,6 +7,7 @@ import Text.Megaparsec.Char
 import Data.Void
 import Data.Text (Text)
 import Chess.Board (Square, isValidSquare)
+import Data.Char (toLower)
 
 --Define parser type; using Void for simplicity as we don't have custom error types here.
 type Parser = Parsec Void Text
@@ -21,16 +22,16 @@ data ChessCommand
 
 
 fileToNum :: Char -> Int
-fileToNum file = fromEnum file - fromEnum 'a'
+fileToNum file = fromEnum (toLower file) - fromEnum 'a'
 
 squareParser :: Parser Square
 squareParser = do
-  fileChar <- letterChar
+  fileChar <- choice $ map char' ['a'..'h']  -- Accept 'a'-'h' in any case
   rankChar <- digitChar
-  let file = fromEnum fileChar - fromEnum 'a'  -- 'a' becomes 0, ..., 'h' becomes 7
-  let rank = read [rankChar] - 1               -- '1' becomes 0, ..., '8' becomes 7
+  let file = fileToNum fileChar  -- 'a' or 'A' becomes 0, ..., 'h' or 'H' becomes 7
+  let rank = read [rankChar] - 1 -- '1' becomes 0, ..., '8' becomes 7
   if isValidSquare (file, rank)
-    then return (file, rank)                   -- Return as (file, rank), bottom-left origin
+    then return (file, rank)     -- Return as (file, rank), bottom-left origin
     else fail "Square out of bounds"
 
 --Move commands should be in the form "square square", such as "e2 e4"
@@ -43,19 +44,19 @@ moveParser = do
 
 -- A parser for the "flip" command.
 flipParser :: Parser ChessCommand
-flipParser = string "flip" >> return FlipCmd
+flipParser = string' "flip" >> return FlipCmd
 
 -- A parser for the "resign" command.
 resignParser :: Parser ChessCommand
-resignParser = string "resign" >> return ResignCmd
+resignParser = string' "resign" >> return ResignCmd
 
--- A parser for the "resign" command.
+-- A parser for the "show" command.
 showParser :: Parser ChessCommand
-showParser = string "show" >> return ResignCmd
+showParser = (string' "show" <|> string' "print") >> return ShowCmd
 
 -- Combine all parsers to parse any of the commands.
 commandParser :: Parser ChessCommand
-commandParser = try moveParser <|> try flipParser <|> resignParser
+commandParser = try moveParser <|> try flipParser <|> resignParser <|> showParser
 
 -- Pparse input text into a ChessCommand.
 parseInput :: Text -> Either (ParseErrorBundle Text Void) ChessCommand

@@ -9,11 +9,9 @@ import Discord.Types (UserId)
 import Control.Concurrent.STM
 import qualified Data.Map as M
 import qualified Data.Text as T
-import Data.Maybe (isNothing)
 
 --Local imports
 import Parsing.ChessParser (parseInput, ChessCommand(..))
-import Chess.Board (Board, startingBoard, Move)
 import Chess.Game
 
 
@@ -23,7 +21,7 @@ type GameRegistry = TVar (M.Map UserId ChessGame)
 --High-levelled status enum that summarizes the outcome of a ChessCommand
 data CommandOutcome = Success SuccessType | Fail FailType  deriving (Show, Eq)
 
-data SuccessType = LegalMove | Resign | Print deriving (Show, Eq)
+data SuccessType = LegalMove | Check | Resign | Print deriving (Show, Eq)
 data FailType = IllegalMove | Invalid deriving (Show, Eq)
 
 --Composite of a result: The enumeric outcome of the ChessCommand, a human-friendly summary, and the resulting game of chess
