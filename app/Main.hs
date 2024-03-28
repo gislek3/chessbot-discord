@@ -45,8 +45,12 @@ createEventHandler handleCommand = \event -> case event of
     let inputText = messageContent m
     result <- liftIO $ handleCommand userId inputText
     let response = case result of
-                      CommandResult outcome msg g@(ChessGame{board=b}) ->
+                      CommandResult (Success Print) msg g@(ChessGame{board=b}) ->
                         msg <> showB b
+                      CommandResult (Success LegalMove) msg g@(ChessGame{board=b}) ->
+                        msg <> showB b
+                      CommandResult _ msg _ -> msg
+
     void $ restCall (R.CreateMessage (messageChannelId m) response)
   _ -> return ()
 

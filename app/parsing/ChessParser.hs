@@ -9,13 +9,15 @@ import Data.Text (Text, pack)
 import Chess.Board (Square, isValidSquare)
 import Control.Monad (void, when)
 
--- Define a type for the parser; using Void for simplicity as we don't have custom error types here.
+--Define parser type; using Void for simplicity as we don't have custom error types here.
 type Parser = Parsec Void Text
 
+--Parsing results are ChessCommand
 data ChessCommand
   = MoveCmd Square Square
   | FlipCmd
   | ResignCmd
+  | ShowCmd
   deriving (Show, Eq)
 
 
@@ -27,12 +29,12 @@ squareParser = do
   fileChar <- letterChar
   rankChar <- digitChar
   let file = fromEnum fileChar - fromEnum 'a'  -- 'a' becomes 0, ..., 'h' becomes 7
-  let rank = read [rankChar] - 1  -- '1' becomes 0, ..., '8' becomes 7
+  let rank = read [rankChar] - 1               -- '1' becomes 0, ..., '8' becomes 7
   if isValidSquare (file, rank)
-    then return (file, rank)  -- Return as (file, rank), aligning with conventional bottom-left origin
+    then return (file, rank)                   -- Return as (file, rank), bottom-left origin
     else fail "Square out of bounds"
 
--- Updated parser for a chess move
+--Move commands should be in the form "square square", such as "e2 e4"
 moveParser :: Parser ChessCommand
 moveParser = do
   start <- squareParser
@@ -48,10 +50,14 @@ flipParser = string "flip" >> return FlipCmd
 resignParser :: Parser ChessCommand
 resignParser = string "resign" >> return ResignCmd
 
+-- A parser for the "resign" command.
+showParser :: Parser ChessCommand
+showParser = string "show" >> return ResignCmd
+
 -- Combine all parsers to parse any of the commands.
 commandParser :: Parser ChessCommand
 commandParser = try moveParser <|> try flipParser <|> resignParser
 
--- Function to parse input text into a ChessCommand.
+-- Pparse input text into a ChessCommand.
 parseInput :: Text -> Either (ParseErrorBundle Text Void) ChessCommand
 parseInput = parse commandParser ""

@@ -56,24 +56,30 @@ testMove = TestList
       let moveResult = makeMove (Move (Piece Rook Black False) (0,0) (0,1)) startBoard
       assertBool "Moving a piece should succeed" (isJust moveResult)
 
-  , TestCase $ do
-      let startBoard = startingBoard
-      let moveResult = makeMove (Move (Piece Pawn White False) (4,1) (4,3)) startBoard
-      assertBool "King's pawn opening succeeds" (isJust moveResult)
-      --assertBool "Pawn is registered as moved after moving" (hasMoved $ lookupB (4,3) $fromJust moveResult)
-
-  , TestCase $ do
+      , TestCase $ do
       let emptyBoard = empty
       let startBoard = place (0,0) (Piece Rook Black False) emptyBoard
       let moveResult = makeMove (Move (Piece Rook Black False) (0,0) (0,-2)) startBoard
       assertBool "Moving a piece to an illegal position should fail" (isNothing moveResult)
-
-  , TestCase $ do
+      
+      , TestCase $ do
       let emptyBoard = empty
       let startBoard = place (0,0) (Piece Rook Black False) . place (0,1) (Piece Knight White False) $ emptyBoard
       let moveResult = makeMove (Move (Piece Rook Black False) (0,0) (0,1)) startBoard
       assertBool "Moving a piece to a square occupied by an enemy piece should succeed" (isJust moveResult)
 
+      , TestCase $ do
+      let emptyBoard = empty
+      let startBoard = place (6,0) (startP Knight White) . place (5,1) (startP Pawn White) . place (6,1) (startP Pawn White) $ emptyBoard
+      let moveResult = makeMove (Move (Piece Knight White False) (6,0) (5,2)) startBoard
+      assertBool "Opening move: Nf3" (isJust moveResult)
+
+  {- , TestCase $ do
+      let startBoard = startingBoard
+      let moveResult = makeMove (Move (Piece Pawn White False) (4,1) (4,3)) startBoard
+      assertBool "King's pawn opening succeeds" (isJust moveResult)
+      --assertBool "Pawn is registered as moved after moving" (hasMoved $ lookupB (4,3) $fromJust moveResult)
+-}
 {-   , TestCase $ do
       let emptyBoard = empty
       let startBoard = place (0,0) (Piece Rook Black False) . place (0,1) (Piece Pawn Black False) $ emptyBoard

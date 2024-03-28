@@ -21,7 +21,10 @@ import Chess.Game
 type GameRegistry = TVar (M.Map UserId ChessGame)
 
 --High-levelled status enum that summarizes the outcome of a ChessCommand
-data CommandOutcome = Success | LegalMove | IllegalMove | Invalid deriving (Show, Eq)
+data CommandOutcome = Success SuccessType | Fail FailType  deriving (Show, Eq)
+
+data SuccessType = LegalMove | Resign | Print deriving (Show, Eq)
+data FailType = IllegalMove | Invalid deriving (Show, Eq)
 
 --Composite of a result: The enumeric outcome of the ChessCommand, a human-friendly summary, and the resulting game of chess
 data CommandResult = CommandResult {
@@ -39,11 +42,11 @@ setupGameHandler gameRegistry = \userId inputText ->
 
     --use chessparser to decipher the user's input text
     case parseInput inputText of
-      Left _ -> return $ CommandResult Invalid "Invalid command" game --failed to parse
+      Left _ -> return $ CommandResult (Fail Invalid) "Invalid command" game --failed to parse
       Right command -> do --successful parse into a ChessCommand
         let commandResult = processCommand command game --result
         case commandResult of
-          CommandResult Success _ updatedGame -> do --only write on success
+          CommandResult (Success _) _ updatedGame -> do --only write on success
             let updatedRegistry = M.insert userId updatedGame registry
             writeTVar gameRegistry updatedRegistry --still atomic, so we can write
             return commandResult
@@ -56,8 +59,9 @@ processCommand command game =
   case command of
     MoveCmd start end -> let attempt = move start end game in
       if updated attempt
-        then CommandResult Success "OK" attempt
-      else CommandResult IllegalMove "NOT OK" game
+        then CommandResult (Success LegalMove) "" attempt
+      else CommandResult (Fail IllegalMove) "Sorry, that move is not possible." game
 
-    ResignCmd -> CommandResult Success "Game over, you have resigned." game
-    _ -> CommandResult Invalid "Invalid command submitted." game
+    ResignCmd -> CommandResult (Success Resign) "Game over, you have resigned." game
+    FlipCmd -> CommandResult (Fail Invalid) "That feature is not yet implemented." game
+    ShowCmd -> CommandResult (Success Print) "Here's the current board:" game

@@ -6,10 +6,15 @@ module Chess.Board where
 --Local imports
 import Chess.Piece
     ( Delta,
-      Piece(Piece, color),
+      getPawnMovement,
+      Piece(Piece, pieceColor, pieceType, hasMoved),
       PieceType(Pawn, Rook, Knight, Bishop, Queen, King),
       Color(..),
-      startP )
+      startP,
+      pieceToChar,
+      getMovementPattern,
+      MovementPattern(deltas, continous),
+      oppositeColor)
 
 --Other imports
 import qualified Data.Map as M
@@ -76,25 +81,6 @@ startingBoard = foldr (\(s, p) board -> place s p board) empty startingPieces
 
 
 
--- Helper function to convert a Piece to its Unicode representation. Change if desired.
--- NOTE: black and white pieces are swapped, it just makes sense
-pieceToChar :: Piece -> Char
-pieceToChar p = case p of
-    Piece Pawn White _ -> '\x265F'
-    (Piece Rook White _) -> '\x265C'
-    (Piece Knight White _) -> '\x265E'
-    (Piece Bishop White _) -> '\x265D'
-    (Piece Queen White _) -> '\x265B'
-    (Piece King White _) -> '\x265A'
-    (Piece Pawn Black _) -> '\x2659'
-    (Piece Rook Black _) -> '\x2656'
-    (Piece Knight Black _) -> '\x2658'
-    (Piece Bishop Black _) -> '\x2657'
-    (Piece Queen Black _) -> '\x2655'
-    (Piece King Black _) -> '\x2654'
-
-
-
 --Returns the content of the square as a SquareContent
 lookupB :: Square -> Board -> SquareContent
 lookupB s b
@@ -112,62 +98,103 @@ isValidSquare' (Move _ start end) = isValidSquare start && isValidSquare end
 
 -- Converts the chess board to a human-readable string representation.
 showB :: Board -> T.Text
-showB b = T.intercalate "\n" (topMargin : boardRows ++ [bottomMargin])
+showB b = "```\n" <> topMargin <> "\n" <> T.intercalate "\n" boardRows <> "\n" <> bottomMargin <> "\n```"
   where
-    topMargin = "  a b c d e f g h"
+    topMargin = "+-A--B--C--D--E--F--G--H-+"
     bottomMargin = topMargin
 
     -- Generate rows starting from the bottom (7 to 0)
-    boardRows = [T.pack (show (y+1)) <> " " <> rowToString y <> " " <> T.pack (show (y+1)) | y <- [7,6..0]]
+    boardRows = [T.pack (show (y+1)) <> "|" <> rowToString y <> "|" <> T.pack (show (y+1)) | y <- [7,6..0]]
 
     rowToString :: Int -> T.Text
-    rowToString y = T.concat [
+    rowToString y = T.concat ["|" <>
         T.singleton (
             case lookupB (x, y) b of
                 Illegal -> error "Illegal square found when trying to show the board."
-                Empty -> '_'
+                Empty -> '＋'
                 Occupied somePiece -> pieceToChar somePiece
-        ) <> " " | x <- [0..7]]
-
-
-
-makeMove :: Move -> Board -> Maybe Board
-makeMove Move {old_square=start, new_square=end} board =
-  case lookupB start board of
-    Empty -> Nothing  --No piece at the start square
-    Occupied p -> --Start square contains a piece, attempt to make move
-      --return new board if successful, otherwise Nothing
-      makeMove' (Move p start end) board
-    _ -> Nothing --Illegal coordinates and other things are always illegal moves
+        ) | x <- [0..7]]
 
 
 
 -- Applies a move to the board if the move is legal
-makeMove' :: Move -> Board -> Maybe Board
-makeMove' move board =
-    if (isValidSquare' move) && (is_legal move board) then
+makeMove :: Move -> Board -> Maybe Board
+makeMove m@(Move{piece=_,old_square=start,new_square=stop}) board =
+    if (isValidSquare start && isValidSquare stop) && (is_legal start stop board) then
         let
-            boardWithoutOldPiece = clear (old_square move) board
-            boardWithNewPiece = place (new_square move) (piece move) boardWithoutOldPiece
+            boardWithoutOldPiece = clear (old_square m) board
+            boardWithNewPiece = place (new_square m) (piece m) boardWithoutOldPiece
         in
             Just boardWithNewPiece
     else
         Nothing
   where
-    -- Placeholder for the legal move checker, always returns True for now
-    --should simply check that 
-    is_legal :: Move -> Board -> Bool
-    is_legal _ _ = True
+    is_legal one two b = case (lookupB start b) of
+      Occupied p -> S.member (Move p one two) (getMoves (p, one) b)
+      Empty -> False
+      Illegal -> error "Illegal squares passed the initial check."
+    
 
 
 --Return all legal moves for a given board
 getAllMoves :: Board -> S.Set Move
-getAllMoves _ = S.empty
+getAllMoves b = S.union (getAllColorMoves White b) (getAllColorMoves Black b)
 
---Return all legal moves for a given piece on a board
-getMoves :: Piece -> Board -> S.Set Move
-getMoves _ _ = S.empty
+--Return all legal moves for a specific color
+getAllColorMoves :: Color -> Board -> S.Set Move
+getAllColorMoves c b = S.unions $ map getPieceMoves [(x, y) | x <- [0..7], y <- [0..7]]
+  where
+    getPieceMoves sq = case lookupB sq b of
+      Occupied p@(Piece {pieceColor=colorOfPiece})| colorOfPiece == c -> getMoves (p,sq) b
+      _ -> S.empty
+
 
 getNextSquare :: Delta -> Square -> Maybe Square
 getNextSquare (rowD, colD) (row, col) = if isValidSquare (row+rowD, col+colD) then Just (row+rowD, col+colD)  else Nothing
+
+
+-- Update the followDelta function to consider continuous movement
+followDelta :: Piece -> Board -> Square -> Delta -> Color -> Bool -> S.Set Move
+followDelta piece board start delta c continuous = go start
+  where
+    go sq
+      | not continuous = case getNextSquare delta sq of
+          Just nextSq -> case lookupB nextSq board of
+            Illegal -> S.empty
+            Empty -> S.insert (Move piece start nextSq) S.empty
+            Occupied (Piece _ colorAtSquare _) ->
+              if colorAtSquare /= c then S.singleton (Move piece start nextSq) else S.empty
+          Nothing -> S.empty
+      | otherwise = case getNextSquare delta sq of
+          Nothing -> S.empty
+          Just nextSq -> case lookupB nextSq board of
+            Illegal -> S.empty
+            Empty -> S.insert (Move piece start nextSq) (go nextSq)
+            Occupied (Piece _ colorAtSquare _) ->
+              if colorAtSquare /= c then S.singleton (Move piece start nextSq) else S.empty
+
+type PositionedPiece = (Piece, Square)
+
+-- Adjust getMoves to extract deltas from MovementPattern and handle continuous movement
+getPawnMoves :: PositionedPiece -> Board -> S.Set Move
+getPawnMoves ((piece@(Piece {pieceType = Pawn, pieceColor = c, hasMoved = hm}), position@(x, y))) board =
+  let
+    -- Calculate forward moves depending on color and whether the pawn has moved before
+    forwardDeltas = if c == White then [(0, 1)] ++ if not hm then [(0, 2)] else [] else [(0, -1)] ++ if not hm then [(0, -2)] else []
+    forwardMoves = [(Move piece (x, y) (x + dx, y + dy)) | (dx, dy) <- forwardDeltas, lookupB (x + dx, y + dy) board == Empty]
+
+    -- Calculate attack moves
+    attackDeltas = if c == White then [(1, 1), (-1, 1)] else [(1, -1), (-1, -1)]
+    attackMoves = [(Move piece (x, y) (x + dx, y + dy)) | (dx, dy) <- attackDeltas, case lookupB (x + dx, y + dy) board of
+                      Occupied p -> pieceColor p == oppositeColor c
+                      _ -> False]
+
+  in S.fromList (forwardMoves ++ attackMoves)
+
+getMoves :: PositionedPiece -> Board -> S.Set Move
+getMoves (piece@(Piece {pieceType = pt, pieceColor = c}), position) board =
+    let movementPattern = getMovementPattern pt
+        deltasList = deltas movementPattern
+        isContinuous = continous movementPattern
+    in S.unions [followDelta piece board position delta c isContinuous | delta <- deltasList]
 
