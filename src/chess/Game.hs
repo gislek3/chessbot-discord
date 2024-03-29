@@ -4,10 +4,10 @@ import Chess.Board
 import Chess.Piece
 
 import qualified Data.Set as S
-import Data.Maybe (fromJust)
+import Data.Maybe (fromJust, isNothing)
 
 
-data GameState = Resigned | Drawn | Active | InCheck Color | Stalemate deriving (Show, Eq)
+data GameState = Active | Resigned | Drawn | InCheck Color | CheckMate Color | Stalemate deriving (Show, Eq)
 data ToPlay = ON Color | OFF deriving (Show, Eq)
 
 -- CommandResult might include the outcome, a message for the user, and optionally the current state of the board.
@@ -15,8 +15,7 @@ data ChessGame = ChessGame {
     board :: Board,
     toPlay :: ToPlay,
     playerColor :: Color,
-    botColor :: Color,
-    gameState :: GameState,  --
+    gameState :: GameState,
     updated :: Bool
 } deriving (Show, Eq)
 
@@ -26,10 +25,12 @@ defaultStart = ChessGame {
     board = startingBoard,
     toPlay = ON White,
     playerColor = White,
-    botColor = Black,
     gameState = Active,
     updated = False
 }
+
+startBlack :: ChessGame
+startBlack = defaultStart{playerColor=Black}
 
 swapPlayer :: ChessGame -> ChessGame
 swapPlayer game@(ChessGame { toPlay = ON currColor }) =
@@ -42,11 +43,41 @@ resign game = game { toPlay = OFF, gameState = Resigned, updated=True }
 draw :: ChessGame -> ChessGame
 draw game = game { toPlay = OFF, gameState = Drawn, updated=True  }
 
-{- evaluateGameState :: ChessGame -> GameState
-evaluateGameState ChessGame{board=b, gameState=gs} = do
-    allBlackMoves <- S.toList getAllColorMoves Black b
-    allWhiteMoves <- S.toList getAllColorMoves White b
-    gs -}
+getCurrentPlayer :: ChessGame -> Maybe Color
+getCurrentPlayer ChessGame{toPlay=tp} = case tp of
+    OFF -> Nothing
+    ON c -> Just c
+
+evaluateGameState :: ChessGame -> ChessGame
+evaluateGameState g@(ChessGame{board=b, gameState=gs, toPlay=tp}) =
+  case tp of
+    OFF -> g -- Game is off, no changes
+    ON currentPlayer -> 
+      let allBlackMoves = getAllColorMoves Black b
+          allWhiteMoves = getAllColorMoves White b
+          whiteIsInCheck = kingIsInCheck White allBlackMoves b
+          blackIsInCheck = kingIsInCheck Black allWhiteMoves b
+          newState = case currentPlayer of
+            White -> if whiteIsInCheck 
+                     then if canGetOutOfCheck White b then InCheck White else CheckMate White
+                     else gs
+            Black -> if blackIsInCheck 
+                     then if canGetOutOfCheck Black b then InCheck Black else CheckMate Black
+                     else gs
+      in g{gameState=newState, toPlay= if newState `elem` [CheckMate White, CheckMate Black] then OFF else ON $ oppositeColor currentPlayer, updated=True}
+    
+
+    --let blackKingInCheck = kingIsInCheck Black
+
+    {-
+    infer who the current player is
+    check if they are putting themselves in check
+    check then if they are checking the opposite player
+    if they are, figure out if the other player can get out of check or not -- this decides checkmate
+    if no player is in check, infer whether or not the opposite player is in statelmate
+    
+    if 
+    -}
 
 
 --Checks whether or not the king of a given color is in check by seeing if it's targeted by any of its enemies
