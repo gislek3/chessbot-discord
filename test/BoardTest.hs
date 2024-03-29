@@ -8,6 +8,9 @@ import Data.Maybe (isJust, fromJust, isNothing)
 import qualified Data.Set as S
 import qualified Data.Map as M
 
+{-
+--TODO: create cantPutYourselfInCheckTest
+-}
 b :: Board
 b = startingBoard
 
