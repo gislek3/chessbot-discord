@@ -7,7 +7,7 @@ import qualified Data.Set as S
 import Data.Maybe (fromJust, isNothing)
 
 
-data GameState = Active | Resigned | Drawn | InCheck Color | CheckMate Color | Stalemate deriving (Show, Eq)
+data GameState = Active | Resigned | Drawn | InCheck Color | CheckMate Color | Stalemate | Reset deriving (Show, Eq)
 data ToPlay = ON Color | OFF deriving (Show, Eq)
 
 -- CommandResult might include the outcome, a message for the user, and optionally the current state of the board.
@@ -29,13 +29,11 @@ defaultStart = ChessGame {
     updated = False
 }
 
+reset :: ChessGame -> ChessGame
+reset g = g{board=startingBoard, toPlay = ON White, gameState=Active, updated=True}
+
 startBlack :: ChessGame
 startBlack = defaultStart{playerColor=Black}
-
-swapPlayer :: ChessGame -> ChessGame
-swapPlayer game@(ChessGame { toPlay = ON currColor }) =
-    game { toPlay = ON (oppositeColor currColor), updated = True }
-swapPlayer game = game {updated = False}
 
 resign :: ChessGame -> ChessGame
 resign game = game { toPlay = OFF, gameState = Resigned, updated=True }
@@ -111,8 +109,10 @@ move start end g@(ChessGame{board=b}) = case lookupB start b of
         Empty -> g{updated=False}
         Occupied occupiedPiece -> move' (Move occupiedPiece start end) g
 
+
 move' :: Move -> ChessGame -> ChessGame
 move' m@(Move {piece = Piece {pieceColor = pc}}) g@(ChessGame {board = b, toPlay = ON gc})
+    | toPlay g == OFF = g
     | gc == pc = case makeMove m b of
         Just movedBoard -> g {board = movedBoard, toPlay = ON (oppositeColor gc), updated = True}
         Nothing -> g {updated = False}

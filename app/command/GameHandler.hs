@@ -13,16 +13,18 @@ import qualified Data.Text as T
 --Local imports
 import Parsing.ChessParser (parseInput, ChessCommand(..))
 import Chess.Game
+import Chess.Piece (Color(..))
 
 
 --TVARs from STM to support atomic memory transactions, creating a functional and thread-safe global registry
 type GameRegistry = TVar (M.Map UserId ChessGame)
 
 --High-levelled status enum that summarizes the outcome of a ChessCommand
-data CommandOutcome = Success SuccessType | Fail FailType  deriving (Show, Eq)
+data CommandOutcome = Modified GameState | Passive PassiveType | Unmodified FailType  deriving (Show, Eq)
 
-data SuccessType = LegalMove | Check | Resign | Print | Reset deriving (Show, Eq)
+data SuccessType = LegalMove | Check | Resign deriving (Show, Eq)
 data FailType = IllegalMove | Invalid deriving (Show, Eq)
+data PassiveType = Print deriving (Show, Eq)
 
 --Composite of a result: The enumeric outcome of the ChessCommand, a human-friendly summary, and the resulting game of chess
 data CommandResult = CommandResult {
@@ -40,11 +42,11 @@ setupGameHandler gameRegistry = \userId inputText ->
 
     --use chessparser to decipher the user's input text
     case parseInput inputText of
-      Left _ -> return $ CommandResult (Fail Invalid) "Invalid command" game --failed to parse
+      Left _ -> return $ CommandResult (Unmodified Invalid) "Invalid command" game --failed to parse
       Right command -> do --successful parse into a ChessCommand
         let commandResult = processCommand command game --result
         case commandResult of
-          CommandResult (Success _) _ updatedGame -> do --only write on success
+          CommandResult (Modified _) _ updatedGame -> do --only write on success
             let updatedRegistry = M.insert userId updatedGame registry
             writeTVar gameRegistry updatedRegistry --still atomic, so we can write
             return commandResult
@@ -56,11 +58,19 @@ processCommand :: ChessCommand -> ChessGame -> CommandResult
 processCommand command game =
   case command of
     MoveCmd start end -> let attempt = move start end game in
-      if updated attempt
-        then CommandResult (Success LegalMove) "" attempt
-      else CommandResult (Fail IllegalMove) "Sorry, that move is not possible." game
+      if updated attempt then case gameState attempt of
+        InCheck White -> CommandResult (Modified Active) "White is in check!" attempt
+        InCheck Black -> CommandResult (Modified Active) "Black is in check!" attempt
+        CheckMate White -> CommandResult (Modified Active) "Checkmate! Black has won the game." attempt
+        CheckMate Black -> CommandResult (Modified Active) "Checkmate! White has won the game." attempt
+        Stalemate -> CommandResult (Modified Active) "Stalemate! It's a draw." attempt
+        _ -> CommandResult (Modified Active) "" attempt
+      else case gameState attempt of
+        Active -> CommandResult (Unmodified IllegalMove) "Sorry, that move is not possible." game
+        InCheck _ -> CommandResult (Unmodified IllegalMove) "You are still in check! Try a different move." game
+        _ -> CommandResult (Unmodified IllegalMove) "The game is over, you can't make any more moves. Type 'reset' to play again, or type 'show' for a list of commands" game 
 
-    ResignCmd -> CommandResult (Success Resign) "Game over, you have resigned." game
-    FlipCmd -> CommandResult (Fail Invalid) "That feature is not yet implemented." game
-    ShowCmd -> CommandResult (Success Print) "Here's the current board:" game
-    ResetCmd -> CommandResult (Success Reset) "Okay, I reset the game for you." (defaultStart)
+    ResignCmd -> CommandResult (Modified Resigned) "Game over, you have resigned." $ resign game
+    FlipCmd -> CommandResult (Unmodified Invalid) "That feature is not yet implemented." game
+    ShowCmd -> CommandResult (Passive Print) "Here's the current board:" game
+    ResetCmd -> CommandResult (Modified Reset) "Okay, I reset the game for you." $ reset game
