@@ -80,11 +80,19 @@ evaluateGameState g@(ChessGame{board=b, gameState=gs, toPlay=tp}) =
 
 --Checks whether or not the king of a given color is in check by seeing if it's targeted by any of its enemies
 kingIsInCheck :: Color -> S.Set Move -> Board -> Bool
-kingIsInCheck friendlyColor enemyMoves board = null [lookupB (new_square m) board | m <- S.toList enemyMoves,
+kingIsInCheck friendlyColor enemyMoves board = not $ null [lookupB (new_square m) board | m <- S.toList enemyMoves,
             case lookupB (new_square m) board of
                 Occupied (Piece King someColor _) -> someColor==friendlyColor
                 _ -> False
             ]
+
+kingIsInCheckDebug :: Color -> S.Set Move -> Board -> [SquareContent]
+kingIsInCheckDebug friendlyColor enemyMoves board = [lookupB (new_square m) board | m <- S.toList enemyMoves,
+            case lookupB (new_square m) board of
+                Occupied (Piece King someColor _) -> someColor==friendlyColor
+                _ -> False
+            ]
+
 
 
 --Given a moveset and a target square, return a subset containing the moves who end up at the target
@@ -104,17 +112,16 @@ canGetOutOfCheck c b = or [not $ inCheckAfterMove m c b | m <- S.toList (getAllC
 
 --TODO: Should probably limit this function to care about whose turn it is also?
 move :: Square -> Square -> ChessGame -> ChessGame
-move start end g@(ChessGame{board=b}) = case lookupB start b of
-        Illegal -> g{updated=False}
-        Empty -> g{updated=False}
-        Occupied occupiedPiece -> move' (Move occupiedPiece start end) g
-
+move start end g@(ChessGame{board=b, toPlay=tp}) = case lookupB start b of
+    Illegal -> g{updated=False}
+    Empty -> g{updated=False}
+    Occupied occupiedPiece -> move' (Move occupiedPiece start end) g
 
 move' :: Move -> ChessGame -> ChessGame
 move' m@(Move {piece = Piece {pieceColor = pc}}) g@(ChessGame {board = b, toPlay = ON gc})
-    | toPlay g == OFF = g
     | gc == pc = case makeMove m b of
-        Just movedBoard -> g {board = movedBoard, toPlay = ON (oppositeColor gc), updated = True}
+        Just movedBoard -> evaluateGameState $ g {board = movedBoard, toPlay = ON (oppositeColor gc), updated = True}
         Nothing -> g {updated = False}
     | otherwise = g {updated = False}
-move' _ g = g {updated = False}
+move' _ g@(ChessGame{toPlay=OFF}) = g{updated=False}
+
