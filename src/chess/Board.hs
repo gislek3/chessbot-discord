@@ -115,6 +115,15 @@ showB b = "```\n" <> topMargin <> "\n" <> T.intercalate "\n" boardRows <> "\n" <
         ) | x <- [0..7]]
 
 
+evaluatePromotions :: Board -> Board
+evaluatePromotions = M.mapWithKey promoteIfPossible
+  where
+    promoteIfPossible :: Square -> Piece -> Piece
+    promoteIfPossible s p = case p of
+      Piece Pawn White _ -> if s `elem` ([(x,7)|x<-[0..7]]) then Piece Queen White True else p
+      Piece Pawn Black _ -> if s `elem` ([(x,0)|x<-[0..7]]) then Piece Queen Black True else p
+      _ -> p
+
 
 -- Applies a move to the board if the move is legal
 makeMove' :: Move -> Bool -> Board -> Maybe Board
@@ -124,7 +133,7 @@ makeMove' m@(Move{piece=movingPiece,old_square=start,new_square=stop}) forced bo
             boardWithoutOldPiece = clear (old_square m) board
             boardWithNewPiece = place (new_square m) (piece m) boardWithoutOldPiece
         in
-            Just boardWithNewPiece
+            Just $ evaluatePromotions boardWithNewPiece
     else
         Nothing
   where

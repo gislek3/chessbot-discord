@@ -14,6 +14,7 @@ import qualified Data.Map as M
 b :: Board
 b = startingBoard
 
+
 testLookup :: Test
 testLookup = TestList
   [ TestCase $ assertEqual "Can find piece #1" (Occupied (Piece Rook White False)) (lookupB (0,0) b),
@@ -79,21 +80,32 @@ testMove = TestList
       let moveResult = makeMove (Move (Piece Knight White False) (6,0) (5,2)) startBoard
       assertBool "Opening move: Nf3" (isJust moveResult)
 
-  {- , TestCase $ do
+      , TestCase $ do
       let startBoard = startingBoard
       let moveResult = makeMove (Move (Piece Pawn White False) (4,1) (4,3)) startBoard
       assertBool "King's pawn opening succeeds" (isJust moveResult)
-      --assertBool "Pawn is registered as moved after moving" (hasMoved $ lookupB (4,3) $fromJust moveResult)
--}
-{-   , TestCase $ do
+
+      , TestCase $ do
       let emptyBoard = empty
       let startBoard = place (0,0) (Piece Rook Black False) . place (0,1) (Piece Pawn Black False) $ emptyBoard
-      let moveResult = makeMove' (Move (Piece Rook Black False) (0,0) (0,1)) startBoard
-      assertBool "Moving a piece to a square occupied by a friendly piece should fail" (isNothing moveResult) -}
+      let moveResult = makeMove (Move (Piece Rook Black False) (0,0) (0,1)) startBoard
+      assertBool "Moving a piece to a square occupied by a friendly piece should fail" (isNothing moveResult)
+
   ]
 
 --TODO: test move function for different pieces
 --TODO: test move function that specifically checks that you don't put your own king in check, includes directly and indirectly
+
+
+testPromotion :: Test
+testPromotion = TestList [
+  TestCase $ do
+    let emptyBoard = empty
+    let startBoard = place (0,6) (Piece Pawn White True) $ emptyBoard
+    let moveResult = makeMove (Move (Piece Pawn White True) (0,6) (0,7)) startBoard
+    assertBool "Move succeeds" (isJust moveResult)
+    assertEqual "Pawn has been promoted." (Occupied (Piece Pawn White True)) (lookupB (0,7) $ fromJust moveResult)
+  ]
 
 --TODO: integrate black pawns
 testGetMovesPawn :: Test
@@ -126,5 +138,6 @@ tests = TestList [
     TestLabel "testClear" testClear,
     TestLabel "testPlace" testPlace,
     TestLabel "testMove" testMove,
-    TestLabel "getMovesPawn" testGetMovesPawn
+    TestLabel "getMovesPawn" testGetMovesPawn,
+    TestLabel "testPromotion" testPromotion
     ]
