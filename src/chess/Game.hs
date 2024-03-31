@@ -29,6 +29,14 @@ defaultStart = ChessGame {
     updated = False
 }
 
+swap :: ChessGame -> ChessGame
+swap g = case toPlay g of
+    OFF -> same g
+    ON c -> g{toPlay=ON $ oppositeColor c, updated=True}
+
+same :: ChessGame -> ChessGame
+same g = g{updated=False}
+
 reset :: ChessGame -> ChessGame
 reset g = g{board=startingBoard, toPlay = ON White, gameState=Active, updated=True}
 
@@ -37,6 +45,9 @@ startBlack = defaultStart{playerColor=Black}
 
 resign :: ChessGame -> ChessGame
 resign game = game { toPlay = OFF, gameState = Resigned, updated=True }
+
+off :: ChessGame -> ChessGame
+off game = game{toPlay = OFF, updated=True}
 
 draw :: ChessGame -> ChessGame
 draw game = game { toPlay = OFF, gameState = Drawn, updated=True  }
@@ -47,23 +58,21 @@ getCurrentPlayer ChessGame{toPlay=tp} = case tp of
     ON c -> Just c
 
 evaluateGameState :: ChessGame -> ChessGame
-evaluateGameState g@(ChessGame{board=b, gameState=gs, toPlay=tp}) =
-  case tp of
-    OFF -> g -- Game is off, no changes
-    ON currentPlayer -> 
-      let allBlackMoves = getAllColorMoves Black b
-          allWhiteMoves = getAllColorMoves White b
-          whiteIsInCheck = kingIsInCheck White allBlackMoves b
-          blackIsInCheck = kingIsInCheck Black allWhiteMoves b
-          newState = case currentPlayer of
-            White -> if whiteIsInCheck 
-                     then if canGetOutOfCheck White b then InCheck White else CheckMate White
-                     else gs
-            Black -> if blackIsInCheck 
-                     then if canGetOutOfCheck Black b then InCheck Black else CheckMate Black
-                     else gs
-      in g{gameState=newState, toPlay= if newState `elem` [CheckMate White, CheckMate Black] then OFF else ON $ oppositeColor currentPlayer, updated=True}
-    
+evaluateGameState g@(ChessGame{board=b, gameState=gs}) =
+    let allBlackMoves = getAllColorMoves Black b
+        allWhiteMoves = getAllColorMoves White b
+        whiteIsInCheck = kingIsInCheck White allBlackMoves b
+        blackIsInCheck = kingIsInCheck Black allWhiteMoves b
+        newState = case toPlay g of
+            OFF -> gs
+            ON White -> if whiteIsInCheck then InCheck White else
+                     if blackIsInCheck && not (canGetOutOfCheck Black b) then CheckMate Black else
+                     if blackIsInCheck then InCheck Black else if null allWhiteMoves then Stalemate else gs
+            ON Black -> if blackIsInCheck then InCheck Black else
+                     if whiteIsInCheck && not (canGetOutOfCheck White b) then CheckMate White else
+                     if whiteIsInCheck then InCheck White else if null allWhiteMoves then Stalemate else gs
+      in g{gameState=newState}
+
 
     --let blackKingInCheck = kingIsInCheck Black
 
@@ -115,13 +124,19 @@ move :: Square -> Square -> ChessGame -> ChessGame
 move start end g@(ChessGame{board=b, toPlay=tp}) = case lookupB start b of
     Illegal -> g{updated=False}
     Empty -> g{updated=False}
-    Occupied occupiedPiece -> move' (Move occupiedPiece start end) g
+    Occupied occupiedPiece -> case tp of
+        OFF -> g{updated=False}
+        ON gc -> if gc==pieceColor occupiedPiece then move' (Move occupiedPiece start end) g else g{updated=False}
 
 move' :: Move -> ChessGame -> ChessGame
-move' m@(Move {piece = Piece {pieceColor = pc}}) g@(ChessGame {board = b, toPlay = ON gc})
-    | gc == pc = case makeMove m b of
-        Just movedBoard -> evaluateGameState $ g {board = movedBoard, toPlay = ON (oppositeColor gc), updated = True}
-        Nothing -> g {updated = False}
-    | otherwise = g {updated = False}
-move' _ g@(ChessGame{toPlay=OFF}) = g{updated=False}
-
+move' m g@(ChessGame {board = b, toPlay=ON cp}) = case makeMove m b of
+    Nothing -> g {updated = False}
+    Just movedBoard -> do
+        let new = evaluateGameState $ g{board = movedBoard}
+        case gameState new of
+            InCheck gc -> if gc==cp then same new else swap new
+            CheckMate _ -> off new
+            Stalemate -> off new
+            Active -> swap new
+            _ -> swap new
+move' _ g@(ChessGame _ OFF _ _ _) = same g
