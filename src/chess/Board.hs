@@ -127,11 +127,11 @@ evaluatePromotions = M.mapWithKey promoteIfPossible
 
 -- Applies a move to the board if the move is legal
 makeMove' :: Move -> Bool -> Board -> Maybe Board
-makeMove' m@(Move{piece=movingPiece,old_square=start,new_square=stop}) forced board =
+makeMove' m@(Move _ start stop ) forced board =
     if (isValidSquare start && isValidSquare stop) && is_legal start stop board then
         let
             boardWithoutOldPiece = clear (old_square m) board
-            boardWithNewPiece = place (new_square m) (piece m) boardWithoutOldPiece
+            boardWithNewPiece = place (new_square m) ((piece m){hasMoved=True}) boardWithoutOldPiece
         in
             Just $ evaluatePromotions boardWithNewPiece
     else
@@ -168,7 +168,7 @@ getAllMoves b = S.union (getAllColorMoves White b) (getAllColorMoves Black b)
 
 --Return all legal moves for a specific color
 getAllColorMoves :: Color -> Board -> S.Set Move
-getAllColorMoves c b = S.unions $ map getPieceMoves [(x, y) | x <- [0..7], y <- [0..7]]
+getAllColorMoves c b = S.unions $ [getPieceMoves (x, y) | x <- [0 .. 7], y <- [0 .. 7]]
   where
     getPieceMoves sq = case lookupB sq b of
       Occupied p@(Piece {pieceColor=colorOfPiece})| colorOfPiece == c -> getMoves (p,sq) b
@@ -219,9 +219,45 @@ getPawnMoves ((p@(Piece {pieceType = Pawn, pieceColor = c, hasMoved = hm}), (x, 
 getPawnMoves _ _= error "getPawnMoves called with non-pawn argument"
 
 
+--Returns potential castling squares
+castle :: PieceType -> Color -> Board -> Maybe Board
+castle side c b = if notElem side [King, Queen] then Nothing else do
+    let kingSideSquares = if c==White then [(5,0),(6,0)] else [(5,7),(6,7)]
+    let queenSideSquares = if c==White then [(2,0),(3,0)] else [(2,7),(3,7)]
+    let enemyMoves = S.toList $ getAllColorMoves (oppositeColor c) b
+    let safeKingSide = and [(new_square m) `elem` kingSideSquares | m <- enemyMoves]
+    let emptyKingSide = and [(lookupB s b) == Empty | s <- kingSideSquares]
+    let emptyQueenSide = and [(lookupB s b) == Empty | s <- queenSideSquares]
+    let safeQueenSide = and [(new_square m) `elem` queenSideSquares | m <- enemyMoves]
+    let kingSideUnmoved = all (\s -> case lookupB s b of
+                                      Occupied p -> not (hasMoved p)
+                                      _ -> True) kingSideSquares
+    let queenSideUnmoved = all (\s -> case lookupB s b of
+                                      Occupied p -> not (hasMoved p)
+                                      _ -> True) queenSideSquares
+    case side of
+      King -> kingsideCastle safeKingSide emptyKingSide kingSideUnmoved b
+      Queen -> queensideCastle safeQueenSide emptyQueenSide queenSideUnmoved b
+      _ -> error "Invalid state reached"
 
+      where
+        kingsideCastle :: Bool -> Bool -> Bool -> Board -> Maybe Board
+        kingsideCastle c1 c2 c3 board = if not (c1 && c2 && c3) then Nothing else do
+          intermediate <- makeMove' (Move (Piece Rook White True) (0,0) (3,0)) True board
+          makeMove' (Move (Piece King White True) (4,0) (2,0)) True intermediate
+        
+        queensideCastle c1 c2 c3 board = if not (c1 && c2 && c3) then Nothing else do
+          intermediate <- makeMove' (Move (Piece Rook White True) (0,0) (3,0)) True board
+          makeMove' (Move (Piece King White True) (4,0) (2,0)) True intermediate
+        
+
+
+
+
+
+--Collect the possible moves for a piece in a given position
 getMoves :: PositionedPiece -> Board -> S.Set Move
-getMoves (p@(Piece {pieceType = pt, pieceColor = c}), position) board =
+getMoves (p@(Piece pt c _), position) board =
     if pt==Pawn then getPawnMoves (p, position) board else
       let movementPattern = getMovementPattern pt
           deltasList = deltas movementPattern

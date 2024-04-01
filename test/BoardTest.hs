@@ -101,7 +101,7 @@ testPromotion :: Test
 testPromotion = TestList [
   TestCase $ do
     let emptyBoard = empty
-    let startBoard = place (0,6) (Piece Pawn White True) $ emptyBoard
+    let startBoard = place (0,6) (Piece Pawn White True) emptyBoard
     let moveResult = makeMove (Move (Piece Pawn White True) (0,6) (0,7)) startBoard
     assertBool "Move succeeds" (isJust moveResult)
     assertEqual "Pawn has been promoted." (Occupied (Piece Pawn White True)) (lookupB (0,7) $ fromJust moveResult)
@@ -119,7 +119,7 @@ testGetMovesPawn = TestList [
   TestCase $ do --Attacking diagonals work, and they don't override normal forward moves.
     let e2pos = (4, 1)
     let attackablesAdded = place (5,2) (startP Rook Black) (place (3,2) (startP Bishop Black) (place (2,3) (startP Pawn Black) b))
-    let e2piece = fromJust $ M.lookup e2pos $ attackablesAdded
+    let e2piece = fromJust $ M.lookup e2pos attackablesAdded
     let possibleMoves = getMoves (e2piece, e2pos) attackablesAdded
     let expectedMoves = S.fromList [Move e2piece (4,1) (4,2), Move e2piece (4,1) (4,3), Move e2piece (4,1) (5,2), Move e2piece (4,1) (3,2)]
     assertEqual "Case #2: Pawn at e2 can also attack its diagonals" expectedMoves possibleMoves,
@@ -130,6 +130,34 @@ testGetMovesPawn = TestList [
     assertBool "Case #3a: Initial move to e3 is valid" (isJust movedOnce)
   ]
 
+testCastle :: Test
+testCastle = TestList [
+    TestCase $ do --Kingside castle as white
+      let startBoard = place (4,0) (Piece King White False) (place (7,0) (Piece Rook White False) empty)
+      assertBool "Kingside castle with no obstacles" (isJust (castle King White startBoard))
+      let inCheck = place (4,4) (Piece Rook Black True) startBoard
+      let unSafe = place (4,4) (Piece Rook Black True) startBoard
+      let moved = fromJust $ makeMove (Move (Piece King White False) (5,0) (4,0)) $ fromJust (makeMove (Move (Piece King White True) (4,0) (5,0)) startBoard)
+      assertBool "Kingside castle while in check" (isNothing (castle King White inCheck))
+      assertBool "Kingside castle onto unsafe squares" (isNothing (castle King White unSafe))
+      assertBool "Kingside castle with moved pieces" (isNothing (castle King White moved))
+      let afterCastle = fromJust $ castle King White startBoard
+      assertEqual "King has moved after castling" (lookupB (6,0) afterCastle) (Occupied$Piece King White True)
+      assertEqual "Rook has moved after castling" (lookupB (5,0) afterCastle) (Occupied$Piece Rook White True)
+
+    , TestCase $ do --Queenside castle as black
+      let startBoard = place (4,7) (Piece King Black False) (place (0,7) (Piece Rook Black False) empty)
+      assertBool "Queenside castle with no obstacles" (isJust (castle King Black startBoard))
+      let inCheck = place (4,4) (Piece Rook White True) startBoard
+      let unSafe = place (3,3) (Piece Rook White True) startBoard
+      let moved = fromJust $ makeMove (Move (Piece King Black False) (3,7) (4,7)) $ fromJust (makeMove (Move (Piece Pawn Black True) (4,7) (3,7)) startBoard)
+      assertBool "Queenside castle while in check" (isNothing (castle King Black inCheck))
+      assertBool "Queenside castle onto unsafe squares" (isNothing (castle King Black unSafe))
+      assertBool "Queenside castle with moved pieces" (isNothing (castle King Black moved))
+      let afterCastle = fromJust $ castle King White startBoard
+      assertEqual "King has moved after castling" (lookupB (2,7) afterCastle) (Occupied$Piece King Black True)
+      assertEqual "Rook has moved after castling" (lookupB (3,7) afterCastle) (Occupied$Piece Rook Black True)
+  ]
 
 
 tests :: Test
@@ -139,5 +167,6 @@ tests = TestList [
     TestLabel "testPlace" testPlace,
     TestLabel "testMove" testMove,
     TestLabel "getMovesPawn" testGetMovesPawn,
-    TestLabel "testPromotion" testPromotion
+    TestLabel "testPromotion" testPromotion,
+    TestLabel "castleTest" testCastle
     ]
