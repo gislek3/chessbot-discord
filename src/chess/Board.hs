@@ -89,13 +89,33 @@ lookupB s b
   | otherwise = error "Invalid state reached in lookupB"
 
 
+justPiece :: SquareContent -> Piece
+justPiece s = case s of
+  Occupied p -> p
+  _ -> error "SquareContent supplied does not contain a piece."
+
+isPiece :: SquareContent -> Bool
+isPiece s = case s of
+  Occupied _ -> True
+  _ -> False
+
+isEmpty :: SquareContent -> Bool
+isEmpty s = case s of
+  Empty -> True
+  _ -> False
+
+isEmptySquare :: Square -> Board -> Bool
+isEmptySquare s b = case lookupB s b of
+  Empty -> True
+  _ -> False
+
 isValidSquare :: Square -> Bool
 isValidSquare (x,y) = (x >= 0 &&  x <= 7) && (y >= 0 && y <= 7)
 
 isValidSquare' :: Move -> Bool
 isValidSquare' (Move _ start end) = isValidSquare start && isValidSquare end
 
--- Converts the chess board to a human-readable string representation.
+-- Makes the board intoa human-readable Text representation
 showB :: Board -> T.Text
 showB b = "```\n" <> topMargin <> "\n" <> T.intercalate "\n" boardRows <> "\n" <> bottomMargin <> "\n```"
   where
@@ -263,4 +283,3 @@ getMoves (p@(Piece pt c _), position) board =
           deltasList = deltas movementPattern
           isContinuous = continous movementPattern
       in S.unions [followDelta p board position delta c isContinuous | delta <- deltasList]
-
