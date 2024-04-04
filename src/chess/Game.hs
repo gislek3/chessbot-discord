@@ -4,7 +4,6 @@ import Chess.Board
 import Chess.Piece
 
 import qualified Data.Set as S
-import Data.Maybe (fromJust, isNothing)
 
 
 data GameState = Active | Resigned | Drawn | InCheck Color | CheckMate Color | Stalemate | Reset deriving (Show, Eq)
@@ -89,15 +88,15 @@ evaluateGameState g@(ChessGame{board=b, gameState=gs}) =
 
 --Checks whether or not the king of a given color is in check by seeing if it's targeted by any of its enemies
 kingIsInCheck :: Color -> S.Set Move -> Board -> Bool
-kingIsInCheck friendlyColor enemyMoves board = not $ null [lookupB (new_square m) board | m <- S.toList enemyMoves,
-            case lookupB (new_square m) board of
+kingIsInCheck friendlyColor enemyMoves b = not $ null [lookupB (new_square m) b | m <- S.toList enemyMoves,
+            case lookupB (new_square m) b of
                 Occupied (Piece King someColor _) -> someColor==friendlyColor
                 _ -> False
             ]
 
 kingIsInCheckDebug :: Color -> S.Set Move -> Board -> [SquareContent]
-kingIsInCheckDebug friendlyColor enemyMoves board = [lookupB (new_square m) board | m <- S.toList enemyMoves,
-            case lookupB (new_square m) board of
+kingIsInCheckDebug friendlyColor enemyMoves b = [lookupB (new_square m) b | m <- S.toList enemyMoves,
+            case lookupB (new_square m) b of
                 Occupied (Piece King someColor _) -> someColor==friendlyColor
                 _ -> False
             ]
@@ -127,25 +126,18 @@ castle pt g@(ChessGame {toPlay=ON c}) = if not $ elem pt [King, Queen] then same
 castle _ g = same g
 
 
-
---TODO: Should probably limit this function to care about whose turn it is also?
 move :: Square -> Square -> ChessGame -> ChessGame
-move start end g@(ChessGame{board=b, toPlay=tp}) = case lookupB start b of
-    Illegal -> g{updated=False}
-    Empty -> g{updated=False}
-    Occupied occupiedPiece -> case tp of
-        OFF -> g{updated=False}
-        ON gc -> if gc==pieceColor occupiedPiece then move' (Move occupiedPiece start end) g else g{updated=False}
+move _ _ g@(ChessGame{toPlay=OFF}) = same g
+move start end g@(ChessGame{board=b, toPlay=ON gc}) = let p = lookupB start b in
+    if not (isPiece p) || (gc /= pieceColor (justPiece p)) then same g else
+        case makeMove (Move (justPiece p) start end) b of
+            Nothing -> g {updated = False}
+            Just movedBoard -> do
+                let new = evaluateGameState $ g{board = movedBoard}
+                case gameState new of
+                    InCheck color -> if gc==color then same new else swap new
+                    CheckMate _ -> off new
+                    Stalemate -> off new
+                    Active -> swap new
+                    _ -> swap new
 
-move' :: Move -> ChessGame -> ChessGame
-move' m g@(ChessGame {board = b, toPlay=ON cp}) = case makeMove m b of
-    Nothing -> g {updated = False}
-    Just movedBoard -> do
-        let new = evaluateGameState $ g{board = movedBoard}
-        case gameState new of
-            InCheck gc -> if gc==cp then same new else swap new
-            CheckMate _ -> off new
-            Stalemate -> off new
-            Active -> swap new
-            _ -> swap new
-move' _ g@(ChessGame _ OFF _ _ _) = same g

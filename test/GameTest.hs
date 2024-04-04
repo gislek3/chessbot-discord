@@ -29,7 +29,7 @@ testMoveInGame= TestList
 
 testTurnSwitching :: Test
 testTurnSwitching = TestList [
-  TestCase $ do
+  TestCase $ do -- Check that the game doesn't update when it shouldn't
     let nf3 = ((6,0),(5,2))
     let e5 = ((4,6),(4,4))
     assertBool "Black can't move first" (not $ updated $ uncurry move e5 game)
@@ -38,6 +38,16 @@ testTurnSwitching = TestList [
     let nh3 = ((5,2),(7,3))
     assertBool "Knight can't move again when it's black's turn" (not $ updated $ uncurry move nh3 after_nf3)
     assertBool "Black can move after the turns have swapped again" (updated $ uncurry move e5 after_nf3)
+  
+  , TestCase $ do -- Verify that the toPlay state is consistent
+    assertEqual "Game state is set to active" (gameState game) Active
+    assertEqual "Whites turn #1" (toPlay game) (ON White)
+    let e2_e4 = move (4,1) (4,3) game
+    assertEqual "Black's turn #1" (toPlay e2_e4) (ON Black)
+    let e7_e5 = move (4,6) (4,4) e2_e4
+    assertEqual "White's turn #2" (toPlay e7_e5) (ON White)
+    let nf3 = move (6,0) (5,2) e7_e5
+    assertEqual "Black's turn #2" (toPlay nf3) (ON Black)
   ]
 
 testCannotMoveAfterGameOver :: Test
@@ -51,31 +61,49 @@ testCannotMoveAfterGameOver = TestList [
 
 testCheck :: Test
 testCheck = TestList [
-    TestCase $ do
+    TestCase $ do -- Can be placed into check
       let moveList = [((4,1),(4,3)), ((5,6),(5,4)), ((3,0),(7,4))]
       let checksBlack = mMap' moveList game
       assertEqual "Queen has moved to h5" (Occupied $ Piece Queen White True) (lookupB (7,4) $ board checksBlack)
       assertBool "The game state reflects that the king is in check" (gameState checksBlack == InCheck Black)
       let whiteMoves = getAllColorMoves White $ board checksBlack
       assertBool "The assertion function matches the game state" $ kingIsInCheck Black whiteMoves (board checksBlack)
+    
+    , TestCase $ do -- You can't place yourself into check
+      let moveList = [((4,1),(4,3)), ((0,6),(0,5)), ((3,0),(7,4))]
+      let readyToCheck = mMap' moveList game
+      assertEqual "Queen has moved to h5" (Occupied $ Piece Queen White True) (lookupB (7,4) $ board readyToCheck)
+      assertBool "Black king is not in check initially" (gameState readyToCheck /= InCheck Black)
+      assertBool "It is black's turn to play" (toPlay readyToCheck == ON Black)
+      let attempt = mMap' [((5,6),(5,4))] readyToCheck
+      assertEqual "Board has not altered after attempt at illegal move" (board attempt) (board readyToCheck)
+
+    
+    , TestCase $ do --You can get yourself out of check
+      let moveList = [((4,1),(4,3)), ((5,6),(5,4)), ((3,0),(7,4))]
+      let checksBlack = mMapGame moveList game
+
+
+      assertEqual "Queen has moved to h5" (Occupied $ Piece Queen White True) (lookupB (7,4) $ board checksBlack)
+      assertBool "Black is in check" (gameState checksBlack == InCheck Black)
+      assertEqual "Black's turn to play after getting put in check" (toPlay checksBlack) (ON Black)
+      let badMove = move (1,7) (2,5) checksBlack
+      assertEqual "Black's turn to play still after badmove" (toPlay badMove) (ON Black)
+      assertBool "Game is not updated after move that doesn't put you out of check" (not $ updated badMove)
+      
+      let goodMove = move (6,6) (6,5) checksBlack
+      ------
+
+
+      ------
+      assertBool "Game is updated after move that gets you out of check" (updated goodMove)
+
   ]
 
-test1 :: Test
-test1 = TestList [
-    TestCase $ do
-    let moveList = [((4,1),(4,3)), ((5,6),(5,4)), ((3,1),(7,4))]
-    let e4 = applyMoves game moveList
-    let allWhiteMoves = getAllColorMoves White $ board e4
-    let blackIsInCheck = kingIsInCheck Black allWhiteMoves $ board e4
-    assertEqual "lmao" [] (kingIsInCheckDebug Black allWhiteMoves (board e4))
-    assertBool "black is in check" (not blackIsInCheck)
-  ]
-
---Fool's mate: e4,g5,d4,f5,Qh5
+--If you are in check and cannot move out of check, then the game should be able to verify this
 testCheckmate :: Test
 testCheckmate = TestList [
-    TestCase $ do
-      --Fool's mate
+    TestCase $ do --Fool's mate: e4,g5,d4,f5,Qh5
       let moveList = [((4,1),(4,3)), ((6,6),(6,4)), ((3,1),(3,3)), ((5,6),(5,4)), ((3,0),(7,4))]
       let fool = applyMoves game moveList
       assertBool "Fool's mate puts black in check mate." (gameState fool == CheckMate Black)
@@ -87,6 +115,5 @@ tests = TestList [
     TestLabel "testCannotMoveAfterGameOver" testCannotMoveAfterGameOver,
     TestLabel "testTurnSwitching" testTurnSwitching,
     TestLabel "testCheckmate" testCheckmate,
-    TestLabel "testCheck" testCheck,
-    TestLabel "remove" test1
+    TestLabel "testCheck" testCheck
     ]
