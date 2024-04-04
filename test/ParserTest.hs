@@ -3,9 +3,12 @@
 module ParserTest (tests) where
 
 import Test.HUnit
-import Parsing.ChessParser (parseInput, ChessCommand(..))
 
 import TestHelpers (isParseError)
+import Parsing.ChessParser
+import Chess.Piece (PieceType(Queen, King))
+import Parsing.ChessParser (ChessCommand(..))
+import Parsing.ChessParser (ChessCommand(CastleCmd))
 
 
 testParseMoveCmd :: Test
@@ -32,9 +35,15 @@ testSimpleCmds = TestCase $ do
     assertEqual "Converting the 'flip' input into a valid Cmd" flip_out (parseInput flip_in)
     assertEqual "Converting the 'resign' input into a valid Cmd" resign_out (parseInput resign_in)
 
+testCastleCmd :: Test
+testCastleCmd = TestCase $ do
+  let queen = "castle queen"
+  let queen_out = Right (CastleCmd Queen)
+  assertEqual "Input 'castle queen' turns into CastleCmd Queen" queen_out (parseInput queen)
 
 tests :: Test
 tests = TestList [
     TestLabel "testMoveCmd" testParseMoveCmd,
-    TestLabel "testSimpleCmds" testSimpleCmds
+    TestLabel "testSimpleCmds" testSimpleCmds,
+    TestLabel "testCastleCmd" testCastleCmd
     ]

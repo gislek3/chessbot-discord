@@ -8,6 +8,7 @@ import Data.Void
 import Data.Text (Text)
 import Chess.Board (Square, isValidSquare)
 import Data.Char (toLower)
+import Chess.Piece (PieceType(Queen, King))
 
 {-
 TODO:
@@ -21,6 +22,7 @@ type Parser = Parsec Void Text
 --Parsing results are ChessCommand
 data ChessCommand
   = MoveCmd Square Square
+  | CastleCmd PieceType
   | FlipCmd
   | ResignCmd
   | ShowCmd
@@ -49,6 +51,17 @@ moveParser = do
   end <- squareParser
   return $ MoveCmd start end
 
+--Castle commands should come in the form "castle queenside/kingside"
+castleParser :: Parser ChessCommand
+castleParser = do
+  _ <- string' "castle"
+  space
+  side <- choice 
+    [ Queen <$ string' "queen"
+    , King <$ string' "king"
+    ]
+  return $ CastleCmd side
+
 -- A parser for the "flip" command.
 flipParser :: Parser ChessCommand
 flipParser = string' "flip" >> return FlipCmd
@@ -67,7 +80,7 @@ resetParser = (string' "reset" <|> string' "start over") >> return ResetCmd
 
 -- Combine all parsers to parse any of the commands.
 commandParser :: Parser ChessCommand
-commandParser = try moveParser <|> try flipParser <|> resignParser <|> showParser <|> resetParser
+commandParser = try moveParser <|> try flipParser <|> resignParser <|> showParser <|> resetParser <|> castleParser
 
 -- Pparse input text into a ChessCommand.
 parseInput :: Text -> Either (ParseErrorBundle Text Void) ChessCommand

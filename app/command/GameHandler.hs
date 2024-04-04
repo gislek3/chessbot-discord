@@ -13,7 +13,8 @@ import qualified Data.Text as T
 --Local imports
 import Parsing.ChessParser (parseInput, ChessCommand(..))
 import Chess.Game
-import Chess.Piece (Color(..))
+import Chess.Piece (Color(..), PieceType(Queen, King))
+import Chess.Board (SquareContent(Illegal))
 
 
 --TVARs from STM to support atomic memory transactions, creating a functional and thread-safe global registry
@@ -69,7 +70,13 @@ processCommand command game =
         Active -> CommandResult (Unmodified IllegalMove) "Sorry, that move is not possible." game
         InCheck _ -> CommandResult (Unmodified IllegalMove) "You are still in check! Try a different move." game
         _ -> CommandResult (Unmodified IllegalMove) "The game is over, you can't make any more moves. Type 'reset' to play again, or type 'show' for a list of commands" game 
-
+    
+    CastleCmd side -> let attempt = castle side game in
+      if updated attempt then
+        CommandResult (Modified Active) "Castle successful!" attempt
+      else
+        CommandResult (Unmodified IllegalMove) "You are unable to castle." attempt
+    
     ResignCmd -> CommandResult (Modified Resigned) "Game over, you have resigned." $ resign game
     FlipCmd -> CommandResult (Unmodified Invalid) "That feature is not yet implemented." game
     ShowCmd -> CommandResult (Passive Print) "Here's the current board:" game

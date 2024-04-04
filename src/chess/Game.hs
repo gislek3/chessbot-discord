@@ -118,6 +118,15 @@ inCheckAfterMove m myColor b =
 canGetOutOfCheck :: Color -> Board -> Bool
 canGetOutOfCheck c b = or [not $ inCheckAfterMove m c b | m <- S.toList (getAllColorMoves c b)]
 
+--Castling wrapper
+castle :: PieceType -> ChessGame -> ChessGame
+castle pt g@(ChessGame {toPlay=ON c}) = if not $ elem pt [King, Queen] then same g else
+    case castleKing pt c (board g) of
+        Nothing -> same g
+        Just b -> swap g{board=b}
+castle _ g = same g
+
+
 
 --TODO: Should probably limit this function to care about whose turn it is also?
 move :: Square -> Square -> ChessGame -> ChessGame

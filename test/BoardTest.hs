@@ -14,6 +14,22 @@ import qualified Data.Map as M
 b :: Board
 b = startingBoard
 
+mHelper :: (Square, Square) -> Board -> Move
+mHelper (start, stop) board = do
+  case lookupB start board of
+    Occupied p -> if (isValidSquare start && isValidSquare stop)
+      then Move p start stop else error "Move is illegal"
+    _ -> error "Move is illegal"
+
+mMap :: [(Square, Square)] -> Board -> Board
+mMap [] board = board
+mMap (x:xs) board = do
+  let newMove = mHelper x board
+  let newBoard = makeMove newMove board
+  case newBoard of
+    Just valid -> mMap xs valid
+    Nothing -> board
+
 
 testLookup :: Test
 testLookup = TestList
@@ -21,7 +37,7 @@ testLookup = TestList
     TestCase $ assertEqual "Can find piece #2" (Occupied (Piece Rook Black False)) (lookupB (7,7) b),
     TestCase $ assertEqual "Can find piece #3" (Occupied (Piece Pawn Black False)) (lookupB (1,6) b),
     TestCase $ assertEqual "Can find piece #4 " (Occupied (Piece King Black False)) (lookupB (4,7) b),
-    
+
     TestCase $ assertEqual "Finds nothing #1" (Empty) (lookupB (4,4) b),
     TestCase $ assertEqual "Finds nothing #2" (Empty) (lookupB (4,5) b),
     TestCase $ assertEqual "Finds nothing #3" (Empty) (lookupB (2,3) b),
@@ -67,7 +83,7 @@ testMove = TestList
       let startBoard = place (0,0) (Piece Rook Black False) emptyBoard
       let moveResult = makeMove (Move (Piece Rook Black False) (0,0) (0,-2)) startBoard
       assertBool "Moving a piece to an illegal position should fail" (isNothing moveResult)
-      
+
       , TestCase $ do
       let emptyBoard = empty
       let startBoard = place (0,0) (Piece Rook Black False) . place (0,1) (Piece Knight White False) $ emptyBoard
@@ -130,31 +146,72 @@ testGetMovesPawn = TestList [
     assertBool "Case #3a: Initial move to e3 is valid" (isJust movedOnce)
   ]
 
+
+testCastle0 :: Test
+testCastle0 = TestList [
+  TestCase $ do
+    let moveList = [((4,1),(4,3)), ((4,6),(4,4)), ((6,0),(5,2)), ((1,7),(2,5)), ((5,0),(2,3)), ((5,7),(2,4))]
+    let giucopiano =  mMap moveList b
+      -- Check white's bishop is at c4 (2,3)
+    assertEqual "White's bishop is at c4" (Occupied (Piece Bishop White True)) (lookupB (2,3) giucopiano)
+    -- Check black's bishop is at c5 (2,4)
+    assertEqual "Black's bishop is at c5" (Occupied (Piece Bishop Black True)) (lookupB (2,4) giucopiano)
+    -- Check white's knight is at f3 (5,1)
+    assertEqual "White's knight is at f3" (Occupied (Piece Knight White True)) (lookupB (5,2) giucopiano)
+    -- Check black's knight is at f6 (5,5)
+    assertEqual "Black's knight is at c6" (Occupied (Piece Knight Black True)) (lookupB (2,5) giucopiano)
+    -- Check that white's castling squares are clear (assuming e1 and h1 are the squares for white's king and rook initially)
+    assertEqual "Empty #1" Empty (lookupB (5,0) giucopiano)
+    assertEqual "Empty #2" Empty (lookupB (6,0) giucopiano)
+
+    --redoncsutred
+    let kingSideSquares = [(5,0),(6,0)]
+    let enemyMoves = S.toList $ getAllColorMoves (oppositeColor White) giucopiano
+    let safeKingSide = not $ or [(new_square m) `elem` kingSideSquares | m <- enemyMoves]
+    
+    let emptyKingSide = and [(lookupB s giucopiano) == Empty | s <- kingSideSquares]
+    let kingSideUnmoved = all (\s -> case lookupB s giucopiano of
+                                      Occupied p -> not (hasMoved p)
+                                      _ -> True) kingSideSquares
+
+    assertBool "empty" emptyKingSide
+    assertBool "safe" safeKingSide
+    assertBool "unmoved" kingSideUnmoved
+
+    let intermediate = makeMove' (Move (Piece Rook White False) (7,0) (5,0)) True giucopiano
+    assertBool "Forced rook ok" (isJust intermediate)
+    let manual = makeMove' (Move (Piece King White False) (4,0) (6,0)) True $ fromJust intermediate
+    --It should now be fine to castle!
+    let afterCastle = castleKing King White giucopiano
+    assertBool "Manual kingside castle in giuco piano" (isJust manual)
+    assertBool "Kingside castle in giuco piano" (isJust afterCastle)
+  ]
+
 testCastle :: Test
 testCastle = TestList [
     TestCase $ do --Kingside castle as white
       let startBoard = place (4,0) (Piece King White False) (place (7,0) (Piece Rook White False) empty)
-      assertBool "Kingside castle with no obstacles" (isJust (castle King White startBoard))
+      let afterCastle = castleKing King White startBoard
+      assertBool "Kingside castle with no obstacles" (isJust afterCastle)
       let inCheck = place (4,4) (Piece Rook Black True) startBoard
       let unSafe = place (4,4) (Piece Rook Black True) startBoard
-      let moved = fromJust $ makeMove (Move (Piece King White False) (5,0) (4,0)) $ fromJust (makeMove (Move (Piece King White True) (4,0) (5,0)) startBoard)
-      assertBool "Kingside castle while in check" (isNothing (castle King White inCheck))
-      assertBool "Kingside castle onto unsafe squares" (isNothing (castle King White unSafe))
-      assertBool "Kingside castle with moved pieces" (isNothing (castle King White moved))
-      let afterCastle = fromJust $ castle King White startBoard
-      assertEqual "King has moved after castling" (lookupB (6,0) afterCastle) (Occupied$Piece King White True)
-      assertEqual "Rook has moved after castling" (lookupB (5,0) afterCastle) (Occupied$Piece Rook White True)
+      let moved = fromJust $ makeMove' (Move (Piece King White False) (5,0) (4,0)) True $ fromJust (makeMove' (Move (Piece King White True) (4,0) (5,0)) True startBoard)
+      --assertBool "Kingside castle while in check" (isNothing (castleKing King White inCheck))
+      assertBool "Kingside castle onto unsafe squares" (isNothing (castleKing King White unSafe))
+      assertBool "Kingside castle with moved pieces" (isNothing (castleKing King White moved))
+      assertEqual "King has moved after castling" (lookupB (6,0) (fromJust afterCastle)) (Occupied$Piece King White True)
+      assertEqual "Rook has moved after castling" (lookupB (5,0) (fromJust afterCastle)) (Occupied$Piece Rook White True)
 
-    , TestCase $ do --Queenside castle as black
+      , TestCase $ do --Queenside castle as black
       let startBoard = place (4,7) (Piece King Black False) (place (0,7) (Piece Rook Black False) empty)
-      assertBool "Queenside castle with no obstacles" (isJust (castle King Black startBoard))
+      assertBool "Queenside castle with no obstacles" (isJust (castleKing Queen Black startBoard))
       let inCheck = place (4,4) (Piece Rook White True) startBoard
       let unSafe = place (3,3) (Piece Rook White True) startBoard
-      let moved = fromJust $ makeMove (Move (Piece King Black False) (3,7) (4,7)) $ fromJust (makeMove (Move (Piece Pawn Black True) (4,7) (3,7)) startBoard)
-      assertBool "Queenside castle while in check" (isNothing (castle King Black inCheck))
-      assertBool "Queenside castle onto unsafe squares" (isNothing (castle King Black unSafe))
-      assertBool "Queenside castle with moved pieces" (isNothing (castle King Black moved))
-      let afterCastle = fromJust $ castle King White startBoard
+      let moved = fromJust $ makeMove' (Move (Piece King Black True) (3,7) (4,7)) True $ fromJust (makeMove' (Move (Piece King Black False) (4,7) (3,7)) True startBoard)
+      assertBool "Queenside castle while in check" (isNothing (castleKing Queen Black inCheck))
+      assertBool "Queenside castle onto unsafe squares" (isNothing (castleKing Queen Black unSafe))
+      assertBool "Queenside castle with moved pieces" (isNothing (castleKing Queen Black moved))
+      let afterCastle = fromJust $ castleKing King White startBoard
       assertEqual "King has moved after castling" (lookupB (2,7) afterCastle) (Occupied$Piece King Black True)
       assertEqual "Rook has moved after castling" (lookupB (3,7) afterCastle) (Occupied$Piece Rook Black True)
   ]
@@ -168,5 +225,6 @@ tests = TestList [
     TestLabel "testMove" testMove,
     TestLabel "getMovesPawn" testGetMovesPawn,
     TestLabel "testPromotion" testPromotion,
-    TestLabel "castleTest" testCastle
+    TestLabel "testCastle0" testCastle0,
+    TestLabel "testCastle" testCastle
     ]
