@@ -64,7 +64,7 @@ getPawnMovement c hm = case c of
 
 getMovementPattern :: PieceType -> MovementPattern
 getMovementPattern pt = case pt of
-    Rook -> MovementPattern {deltas=[(-1, 0), (1, 0), (0, 1), (0, 1)], continous=True}
+    Rook -> MovementPattern {deltas=[(-1, 0), (1, 0), (0, -1), (0, 1)], continous=True}
     Bishop -> MovementPattern {deltas=[(-1, 1), (-1, -1), (1, 1), (1, -1)], continous=True}
     Knight -> MovementPattern{deltas=[(-1, 2), (1, 2), (-1, -2), (1, -2), (-2, 1), (-2, -1), (2, -1), (2, 1)], continous=False}
     Queen -> MovementPattern{deltas=[(-1, -1), (-1, 0), (-1, 1), (0, -1), (0, 1), (1, -1), (1, 0), (1, 1)], continous=True}

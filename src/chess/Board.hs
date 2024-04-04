@@ -223,19 +223,19 @@ getPawnMoves _ _= error "getPawnMoves called with non-pawn argument"
 castleKing :: PieceType -> Color -> Board -> Maybe Board
 castleKing side c b = if notElem side [King, Queen] then Nothing else do
     let kingSideSquares = if c==White then [(5,0),(6,0)] else [(5,7),(6,7)]
-    let queenSideSquares = if c==White then [(2,0),(3,0)] else [(2,7),(3,7)]
+    let queenSideSquares = if c==White then [(2,0),(3,0)] else [(1,7),(2,7),(3,7)]
     let enemyMoves = S.toList $ getAllColorMoves (oppositeColor c) b
     let safeKingSide = not $ or [(new_square m) `elem` kingSideSquares | m <- enemyMoves]
     let emptyKingSide = and [(lookupB s b) == Empty | s <- kingSideSquares]
     let kingSideUnmoved = all (\s -> case lookupB s b of
                                       Occupied p -> not (hasMoved p)
-                                      _ -> True) kingSideSquares   
+                                      _ -> True) (if c==White then [(4,0),(7,0)] else [(4,7),(7,7)])  
     let kingOK = emptyKingSide&&safeKingSide&&kingSideUnmoved
     let emptyQueenSide = and [(lookupB s b) == Empty | s <- queenSideSquares]
-    let safeQueenSide = and [(new_square m) `elem` queenSideSquares | m <- enemyMoves]
+    let safeQueenSide = not $ or [(new_square m) `elem` queenSideSquares | m <- enemyMoves]
     let queenSideUnmoved = all (\s -> case lookupB s b of
                                       Occupied p -> not (hasMoved p)
-                                      _ -> True) queenSideSquares
+                                      _ -> True) (if c==White then [(4,0),(0,0)] else [(4,7),(0,7)])
     let queenOK = emptyQueenSide&&safeQueenSide&&queenSideUnmoved
 
     if side==King&&kingOK then kingsideCastle b c
@@ -244,12 +244,16 @@ castleKing side c b = if notElem side [King, Queen] then Nothing else do
       where
         kingsideCastle :: Board -> Color -> Maybe Board
         kingsideCastle board color = let y = if color==White then 0 else 7 in do
-          intermediate <- makeMove' (Move (Piece Rook color True) (7,y) (5,y)) True board
-          makeMove' (Move (Piece King color True) (4,y) (6,y)) True intermediate
+          let intermediate = makeMove' (Move (Piece Rook color True) (7,y) (5,y)) True board
+          case intermediate of
+            Nothing -> Nothing
+            Just a -> makeMove' (Move (Piece King color True) (4,y) (6,y)) True a
         queensideCastle :: Board -> Color -> Maybe Board
         queensideCastle board color = let y = if color==White then 0 else 7 in do
-          intermediate <- makeMove' (Move (Piece Rook color True) (0,y) (3,y)) True board
-          makeMove' (Move (Piece King color True) (4,y) (2,y)) True intermediate
+          let intermediate = makeMove' (Move (Piece Rook color True) (0,y) (3,y)) True board
+          case intermediate of
+            Nothing -> Nothing
+            Just a -> makeMove' (Move (Piece King color True) (4,y) (2,y)) True a
         
 
 
