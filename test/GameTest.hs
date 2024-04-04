@@ -5,7 +5,7 @@ import Chess.Game
 import Chess.Piece
 import Chess.Board
 import qualified Data.Set as S (toList, empty)
-
+import TestHelpers
 
 game :: ChessGame
 game = defaultStart
@@ -52,8 +52,8 @@ testCannotMoveAfterGameOver = TestList [
 testCheck :: Test
 testCheck = TestList [
     TestCase $ do
-      let moveList = [((3,1),(3,3)),((3,6),(3,4)),((3,1),(5,3)),((3,0),(7,4))]
-      let checksBlack = applyMoves game moveList
+      let moveList = [((4,1),(4,3)), ((5,6),(5,4)), ((3,0),(7,4))]
+      let checksBlack = mMap' moveList game
       assertEqual "Queen has moved to h5" (Occupied $ Piece Queen White True) (lookupB (7,4) $ board checksBlack)
       assertBool "The game state reflects that the king is in check" (gameState checksBlack == InCheck Black)
       let whiteMoves = getAllColorMoves White $ board checksBlack
@@ -63,7 +63,7 @@ testCheck = TestList [
 test1 :: Test
 test1 = TestList [
     TestCase $ do
-    let moveList = [((4,1),(4,3))]
+    let moveList = [((4,1),(4,3)), ((5,6),(5,4)), ((3,1),(7,4))]
     let e4 = applyMoves game moveList
     let allWhiteMoves = getAllColorMoves White $ board e4
     let blackIsInCheck = kingIsInCheck Black allWhiteMoves $ board e4
