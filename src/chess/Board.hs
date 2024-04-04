@@ -223,12 +223,13 @@ getPawnMoves _ _= error "getPawnMoves called with non-pawn argument"
 castleKing :: PieceType -> Color -> Board -> Maybe Board
 castleKing side c b = if notElem side [King, Queen] then Nothing else do
     let enemyMoves = S.toList $ getAllColorMoves (oppositeColor c) b
+    let kingPosition = if c==White then (4,0) else (4,7)
     let piecePositions = if side==King then if c==White then [(4,0),(7,0)] else [(4,7),(7,7)]
                   else if c==White then [(4,0),(0,0)] else [(4,7),(0,7)]
     let squares = if side==King then if c==White then [(5,0),(6,0)] else [(5,7),(6,7)]
                   else if c==White then [(2,0),(3,0)] else [(1,7),(2,7),(3,7)]
     
-    let safeSide = not $ or [new_square m `elem` squares | m <- enemyMoves]
+    let safeSide = not $ or [new_square m `elem` squares || new_square m==kingPosition | m <- (enemyMoves)]
     let emptySide = and [lookupB s b == Empty | s <- squares]
     let unmovedSide = all (\s -> case lookupB s b of
                                       Occupied p -> not (hasMoved p)
