@@ -131,8 +131,8 @@ testPromotion = TestList [
   ]
 
 --TODO: integrate black pawns
-testGetMovesPawn :: Test
-testGetMovesPawn = TestList [
+testWhitePawnMovement :: Test
+testWhitePawnMovement = TestList [
   TestCase $ do --Normal forward moves work
     let e2pos = (4, 1)
     let e2piece = fromJust $ M.lookup e2pos b
@@ -152,6 +152,30 @@ testGetMovesPawn = TestList [
     let movedOnce = makeMove (Move e2piece (4,1) (4,2)) b
     assertBool "Case #3a: Initial move to e3 is valid" (isJust movedOnce)
   ]
+
+testBlackPawnMovement :: Test
+testBlackPawnMovement = TestList [
+  TestCase $ do --Normal forward moves work
+    let e7pos = (4,6)
+    let e7piece = fromJust $ M.lookup e7pos b
+    let possibleMoves = getMoves (e7piece, e7pos) b
+    let expectedMoves = S.fromList [Move e7piece (4,6) (4,4), Move e7piece (4,6) (4,5)]
+    assertEqual "Case #1: Pawn at e7 can move to e6 and e5" expectedMoves possibleMoves,
+  TestCase $ do --Attacking diagonals work, and they don't override normal forward moves.
+    let e7pos = (4,6)
+    let attackablesAdded = place (3,5) (startP Rook White) (place (5,5) (startP Bishop White) b)
+    let e2piece = fromJust $ M.lookup e7pos attackablesAdded
+    let possibleMoves = getMoves (e2piece, e7pos) attackablesAdded
+    let expectedMoves = S.fromList [Move e2piece (4,6) (4,5), Move e2piece (4,6) (4,4), Move e2piece (4,6) (3,5), Move e2piece (4,6) (5,5)]
+    assertEqual "Case #2: Pawn at e7 can also attack its diagonals" expectedMoves possibleMoves,
+  TestCase $ do --Double move is only valid once
+    let e7pos = (4,6)
+    let e7piece = fromJust $ M.lookup e7pos b
+    let movedOnce = makeMove (Move e7piece (4,6) (4,5)) b
+    assertBool "Case #3a: Initial move to e6 is valid" (isJust movedOnce)
+    assertBool "Case #3b: Cannot double move after initial" (isNothing $ makeMove (Move (Piece Pawn Black True) (4,5) (4,3)) $ (fromJust movedOnce))
+  ]
+
 
 
 
@@ -238,7 +262,8 @@ tests = TestList [
     TestLabel "testClear" testClear,
     TestLabel "testPlace" testPlace,
     TestLabel "testMove" testMove,
-    TestLabel "getMovesPawn" testGetMovesPawn,
+    TestLabel "testWhitePawnMovement" testWhitePawnMovement,
+    TestLabel "testBlackPawnMovement" testBlackPawnMovement,
     TestLabel "testPromotion" testPromotion,
     TestLabel "testCastle0" testCastle0,
     TestLabel "testCastle" testCastle
