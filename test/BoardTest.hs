@@ -115,12 +115,19 @@ testMove = TestList
 
 testPromotion :: Test
 testPromotion = TestList [
-  TestCase $ do
+  TestCase $ do --for white
     let emptyBoard = empty
     let startBoard = place (0,6) (Piece Pawn White True) emptyBoard
     let moveResult = makeMove (Move (Piece Pawn White True) (0,6) (0,7)) startBoard
     assertBool "Move succeeds" (isJust moveResult)
-    assertEqual "Pawn has been promoted." (Occupied (Piece Pawn White True)) (lookupB (0,7) $ fromJust moveResult)
+    assertEqual "White pawn has been promoted." (Occupied (Piece Queen White True)) (lookupB (0,7) $ fromJust moveResult)
+  
+  , TestCase $ do --for black
+    let emptyBoard = empty
+    let startBoard = place (0,1) (Piece Pawn Black True) emptyBoard
+    let moveResult = makeMove (Move (Piece Pawn Black True) (0,1) (0,0)) startBoard
+    assertBool "Move succeeds" (isJust moveResult)
+    assertEqual "Black pawn has been promoted." (Occupied (Piece Queen Black True)) (lookupB (0,0) $ fromJust moveResult)
   ]
 
 --TODO: integrate black pawns
