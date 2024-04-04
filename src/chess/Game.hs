@@ -56,22 +56,6 @@ getCurrentPlayer ChessGame{toPlay=tp} = case tp of
     OFF -> Nothing
     ON c -> Just c
 
-evaluateGameState :: ChessGame -> ChessGame
-evaluateGameState g@(ChessGame{board=b, gameState=gs}) =
-    let allBlackMoves = getAllColorMoves Black b
-        allWhiteMoves = getAllColorMoves White b
-        whiteIsInCheck = kingIsInCheck White allBlackMoves b
-        blackIsInCheck = kingIsInCheck Black allWhiteMoves b
-        newState = case toPlay g of
-            OFF -> gs
-            ON White -> if whiteIsInCheck then InCheck White else
-                     if blackIsInCheck && not (canGetOutOfCheck Black b) then CheckMate Black else
-                     if blackIsInCheck then InCheck Black else if null allWhiteMoves then Stalemate else gs
-            ON Black -> if blackIsInCheck then InCheck Black else
-                     if whiteIsInCheck && not (canGetOutOfCheck White b) then CheckMate White else
-                     if whiteIsInCheck then InCheck White else if null allWhiteMoves then Stalemate else gs
-      in g{gameState=newState}
-
 
     --let blackKingInCheck = kingIsInCheck Black
 
@@ -131,13 +115,29 @@ move _ _ g@(ChessGame{toPlay=OFF}) = same g
 move start end g@(ChessGame{board=b, toPlay=ON gc}) = let p = lookupB start b in
     if not (isPiece p) || (gc /= pieceColor (justPiece p)) then same g else
         case makeMove (Move (justPiece p) start end) b of
-            Nothing -> g {updated = False}
+            Nothing -> same g
             Just movedBoard -> do
                 let new = evaluateGameState $ g{board = movedBoard}
                 case gameState new of
-                    InCheck color -> if gc==color then same new else swap new
+                    InCheck color -> if gc==color then same g{board=b} else swap new
                     CheckMate _ -> off new
                     Stalemate -> off new
                     Active -> swap new
                     _ -> swap new
+
+evaluateGameState :: ChessGame -> ChessGame
+evaluateGameState g@(ChessGame{board=b, gameState=gs}) =
+    let allBlackMoves = getAllColorMoves Black b
+        allWhiteMoves = getAllColorMoves White b
+        whiteIsInCheck = kingIsInCheck White allBlackMoves b
+        blackIsInCheck = kingIsInCheck Black allWhiteMoves b
+        newState = case toPlay g of
+            OFF -> gs
+            ON White -> if whiteIsInCheck then InCheck White else
+                     if blackIsInCheck && not (canGetOutOfCheck Black b) then CheckMate Black else
+                     if blackIsInCheck then InCheck Black else if null allWhiteMoves then Stalemate else Active
+            ON Black -> if blackIsInCheck then InCheck Black else
+                     if whiteIsInCheck && not (canGetOutOfCheck White b) then CheckMate White else
+                     if whiteIsInCheck then InCheck White else if null allWhiteMoves then Stalemate else Active
+      in g{gameState=newState}
 

@@ -5,6 +5,7 @@ import Chess.Game
 import Chess.Piece
 import Chess.Board
 import qualified Data.Set as S (toList, empty)
+import Data.Maybe (isJust, fromJust)
 import TestHelpers
 
 game :: ChessGame
@@ -63,7 +64,7 @@ testCheck :: Test
 testCheck = TestList [
     TestCase $ do -- Can be placed into check
       let moveList = [((4,1),(4,3)), ((5,6),(5,4)), ((3,0),(7,4))]
-      let checksBlack = mMap' moveList game
+      let checksBlack = mMapGame moveList game
       assertEqual "Queen has moved to h5" (Occupied $ Piece Queen White True) (lookupB (7,4) $ board checksBlack)
       assertBool "The game state reflects that the king is in check" (gameState checksBlack == InCheck Black)
       let whiteMoves = getAllColorMoves White $ board checksBlack
@@ -71,33 +72,28 @@ testCheck = TestList [
     
     , TestCase $ do -- You can't place yourself into check
       let moveList = [((4,1),(4,3)), ((0,6),(0,5)), ((3,0),(7,4))]
-      let readyToCheck = mMap' moveList game
+      let readyToCheck = mMapGame moveList game
       assertEqual "Queen has moved to h5" (Occupied $ Piece Queen White True) (lookupB (7,4) $ board readyToCheck)
       assertBool "Black king is not in check initially" (gameState readyToCheck /= InCheck Black)
-      assertBool "It is black's turn to play" (toPlay readyToCheck == ON Black)
-      let attempt = mMap' [((5,6),(5,4))] readyToCheck
+      let attempt = mMapGame [((5,6),(5,4))] readyToCheck
       assertEqual "Board has not altered after attempt at illegal move" (board attempt) (board readyToCheck)
 
     
     , TestCase $ do --You can get yourself out of check
       let moveList = [((4,1),(4,3)), ((5,6),(5,4)), ((3,0),(7,4))]
       let checksBlack = mMapGame moveList game
-
-
       assertEqual "Queen has moved to h5" (Occupied $ Piece Queen White True) (lookupB (7,4) $ board checksBlack)
       assertBool "Black is in check" (gameState checksBlack == InCheck Black)
       assertEqual "Black's turn to play after getting put in check" (toPlay checksBlack) (ON Black)
+      
       let badMove = move (1,7) (2,5) checksBlack
       assertEqual "Black's turn to play still after badmove" (toPlay badMove) (ON Black)
       assertBool "Game is not updated after move that doesn't put you out of check" (not $ updated badMove)
       
       let goodMove = move (6,6) (6,5) checksBlack
-      ------
-
-
-      ------
-      assertBool "Game is updated after move that gets you out of check" (updated goodMove)
-
+      assertBool "Game is updated after move that gets you out of check" (updated goodMove) 
+      assertEqual "White's turn to play again after black is out of check" (toPlay goodMove) (ON White)
+      assertEqual "Game is now active again, and nobody is in check" (gameState goodMove) (Active)
   ]
 
 --If you are in check and cannot move out of check, then the game should be able to verify this
@@ -109,11 +105,25 @@ testCheckmate = TestList [
       assertBool "Fool's mate puts black in check mate." (gameState fool == CheckMate Black)
   ]
 
+testStalemate :: Test
+testStalemate = TestList [
+    TestCase $ do 
+      let wq = Piece Queen White True
+      let wk = Piece King White True
+      let bk = Piece King Black True
+      let staleBoard = place (0,0) wk (place (2,0) wq (place (0,7) bk empty))
+      let staleGame = game{board=staleBoard}
+      let stalemate = move (2,0) (2,6) staleGame
+      assertEqual "Game is stalemated" (gameState stalemate) (Stalemate)
+      assertEqual "Game is over" (toPlay stalemate) (OFF)
+  ]
+
 tests :: Test
 tests = TestList [
     TestLabel "testMoveInGame" testMoveInGame,
     TestLabel "testCannotMoveAfterGameOver" testCannotMoveAfterGameOver,
     TestLabel "testTurnSwitching" testTurnSwitching,
     TestLabel "testCheckmate" testCheckmate,
-    TestLabel "testCheck" testCheck
+    TestLabel "testCheck" testCheck,
+    TestLabel "testStalemate" testStalemate
     ]

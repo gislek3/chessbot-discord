@@ -22,10 +22,14 @@ import qualified Data.Text as T
 import qualified Data.Set as S
 
 
--- Define the ChessBoard as a map from Square to Maybe Piece
+-- Using Data.Map to inherit a lot of instances
 type Board = M.Map Square Piece
-
 type Square = (Int, Int)
+type PositionedPiece = (Piece, Square)
+
+{- instance Show Board where
+  show = showB -}
+
 
 --A move consists of a Piece making a move and the square it is moving to
 data Move = Move {piece :: Piece, old_square :: Square, new_square :: Square}
@@ -34,8 +38,7 @@ data Move = Move {piece :: Piece, old_square :: Square, new_square :: Square}
 instance Ord Move where
     compare (Move _ o1 n1) (Move _ o2 n2) = compare (o1, n1) (o2, n2)
 
-{- instance Show Board where
-  show = showB -}
+
 
 -- Initialize an empty chess board
 empty :: Board
@@ -94,20 +97,21 @@ justPiece s = case s of
   Occupied p -> p
   _ -> error "SquareContent supplied does not contain a piece."
 
+--Checks whether the contents of a square is a piece, comparable to isJust
 isPiece :: SquareContent -> Bool
 isPiece s = case s of
   Occupied _ -> True
   _ -> False
 
+--Checks whether the contents of a square is null, comparable to isNothing
 isEmpty :: SquareContent -> Bool
 isEmpty s = case s of
   Empty -> True
   _ -> False
 
+--isEmpty primed for square input
 isEmptySquare :: Square -> Board -> Bool
-isEmptySquare s b = case lookupB s b of
-  Empty -> True
-  _ -> False
+isEmptySquare s b = isEmpty $ lookupB s b
 
 isValidSquare :: Square -> Bool
 isValidSquare (x,y) = (x >= 0 &&  x <= 7) && (y >= 0 && y <= 7)
@@ -219,9 +223,8 @@ followDelta p board start delta c continuous = go start
             Occupied (Piece _ colorAtSquare _) ->
               if colorAtSquare /= c then S.singleton (Move p start nextSq) else S.empty
 
-type PositionedPiece = (Piece, Square)
 
--- Adjust getMoves to extract deltas from MovementPattern and handle continuous movement
+
 getPawnMoves :: PositionedPiece -> Board -> S.Set Move
 getPawnMoves ((p@(Piece {pieceType = Pawn, pieceColor = c, hasMoved = hm}), (x, y))) board =
   let
@@ -237,6 +240,7 @@ getPawnMoves ((p@(Piece {pieceType = Pawn, pieceColor = c, hasMoved = hm}), (x, 
 
   in S.fromList (forwardMoves ++ attackMoves)
 getPawnMoves _ _= error "getPawnMoves called with non-pawn argument"
+
 
 
 --Returns potential castling squares
