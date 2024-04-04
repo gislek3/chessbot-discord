@@ -222,25 +222,22 @@ getPawnMoves _ _= error "getPawnMoves called with non-pawn argument"
 --Returns potential castling squares
 castleKing :: PieceType -> Color -> Board -> Maybe Board
 castleKing side c b = if notElem side [King, Queen] then Nothing else do
-    let kingSideSquares = if c==White then [(5,0),(6,0)] else [(5,7),(6,7)]
-    let queenSideSquares = if c==White then [(2,0),(3,0)] else [(1,7),(2,7),(3,7)]
     let enemyMoves = S.toList $ getAllColorMoves (oppositeColor c) b
-    let safeKingSide = not $ or [(new_square m) `elem` kingSideSquares | m <- enemyMoves]
-    let emptyKingSide = and [(lookupB s b) == Empty | s <- kingSideSquares]
-    let kingSideUnmoved = all (\s -> case lookupB s b of
+    let piecePositions = if side==King then if c==White then [(4,0),(7,0)] else [(4,7),(7,7)]
+                  else if c==White then [(4,0),(0,0)] else [(4,7),(0,7)]
+    let squares = if side==King then if c==White then [(5,0),(6,0)] else [(5,7),(6,7)]
+                  else if c==White then [(2,0),(3,0)] else [(1,7),(2,7),(3,7)]
+    
+    let safeSide = not $ or [new_square m `elem` squares | m <- enemyMoves]
+    let emptySide = and [lookupB s b == Empty | s <- squares]
+    let unmovedSide = all (\s -> case lookupB s b of
                                       Occupied p -> not (hasMoved p)
-                                      _ -> True) (if c==White then [(4,0),(7,0)] else [(4,7),(7,7)])  
-    let kingOK = emptyKingSide&&safeKingSide&&kingSideUnmoved
-    let emptyQueenSide = and [(lookupB s b) == Empty | s <- queenSideSquares]
-    let safeQueenSide = not $ or [(new_square m) `elem` queenSideSquares | m <- enemyMoves]
-    let queenSideUnmoved = all (\s -> case lookupB s b of
-                                      Occupied p -> not (hasMoved p)
-                                      _ -> True) (if c==White then [(4,0),(0,0)] else [(4,7),(0,7)])
-    let queenOK = emptyQueenSide&&safeQueenSide&&queenSideUnmoved
-
-    if side==King&&kingOK then kingsideCastle b c
-    else if side==Queen&&queenOK then queensideCastle b c
-    else Nothing
+                                      _ -> True) piecePositions 
+    
+    if not (emptySide && safeSide && unmovedSide) then Nothing
+    else if side==King then kingsideCastle b c
+    else queensideCastle b c
+      --TODO: make into a single function
       where
         kingsideCastle :: Board -> Color -> Maybe Board
         kingsideCastle board color = let y = if color==White then 0 else 7 in do
@@ -255,9 +252,6 @@ castleKing side c b = if notElem side [King, Queen] then Nothing else do
             Nothing -> Nothing
             Just a -> makeMove' (Move (Piece King color True) (4,y) (2,y)) True a
         
-
-
-
 
 
 --Collect the possible moves for a piece in a given position
