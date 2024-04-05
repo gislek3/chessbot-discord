@@ -27,6 +27,8 @@ data ChessCommand
   | ResignCmd
   | ShowCmd
   | ResetCmd
+  | TurnCmd
+  | TakebackCmd
   deriving (Show, Eq)
 
 
@@ -63,6 +65,14 @@ castleParser = do
   return $ CastleCmd side
 
 -- A parser for the "flip" command.
+takebackParser :: Parser ChessCommand
+takebackParser = (string' "takeback" <|> string' "undo" <|> string' "regret") >> return TakebackCmd
+
+-- A parser for the "flip" command.
+turnParser :: Parser ChessCommand
+turnParser = (string' "turn" <|> string' "toplay" <|> string' "who") >> return TurnCmd
+
+-- A parser for the "flip" command.
 flipParser :: Parser ChessCommand
 flipParser = string' "flip" >> return FlipCmd
 
@@ -80,7 +90,8 @@ resetParser = (string' "reset" <|> string' "start over") >> return ResetCmd
 
 -- Combine all parsers to parse any of the commands.
 commandParser :: Parser ChessCommand
-commandParser = try moveParser <|> try flipParser <|> resignParser <|> showParser <|> resetParser <|> castleParser
+commandParser = try moveParser <|> try flipParser <|> resignParser <|> showParser <|> resetParser
+                <|> castleParser <|> try turnParser <|> try takebackParser
 
 -- Pparse input text into a ChessCommand.
 parseInput :: Text -> Either (ParseErrorBundle Text Void) ChessCommand

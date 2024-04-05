@@ -15,6 +15,7 @@ import Parsing.ChessParser (parseInput, ChessCommand(..))
 import Chess.Game
 import Chess.Piece (Color(..), PieceType(Queen, King))
 import Chess.Board (SquareContent(Illegal))
+import Parsing.ChessParser (ChessCommand(..))
 
 
 --TVARs from STM to support atomic memory transactions, creating a functional and thread-safe global registry
@@ -25,7 +26,7 @@ data CommandOutcome = Modified GameState | Passive PassiveType | Unmodified Fail
 
 data SuccessType = LegalMove | Check | Resign deriving (Show, Eq)
 data FailType = IllegalMove | Invalid deriving (Show, Eq)
-data PassiveType = Print deriving (Show, Eq)
+data PassiveType = Print | Turn deriving (Show, Eq)
 
 --Composite of a result: The enumeric outcome of the ChessCommand, a human-friendly summary, and the resulting game of chess
 data CommandResult = CommandResult {
@@ -77,6 +78,11 @@ processCommand command game =
       else
         CommandResult (Unmodified IllegalMove) "You are unable to castle." attempt
     
+    TurnCmd -> case toPlay game of
+      ON White -> CommandResult (Passive Turn) "It's white's turn to play." game
+      ON Black -> CommandResult (Passive Turn) "It's black's turn to play." game
+      OFF -> CommandResult (Passive Turn) "It's nobody's turn! The game is over." game
+    TakebackCmd -> CommandResult (Unmodified Invalid) "That feature is not yet implemented." game
     ResignCmd -> CommandResult (Modified Resigned) "Game over, you have resigned." $ resign game
     FlipCmd -> CommandResult (Unmodified Invalid) "That feature is not yet implemented." game
     ShowCmd -> CommandResult (Passive Print) "Here's the current board:" game
