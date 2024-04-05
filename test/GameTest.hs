@@ -114,6 +114,7 @@ testStalemate = TestList [
       let staleBoard = place (0,0) wk (place (2,0) wq (place (0,7) bk empty))
       let staleGame = game{board=staleBoard}
       let stalemate = move (2,0) (2,6) staleGame
+
       assertEqual "Game is stalemated" (gameState stalemate) (Stalemate)
       assertEqual "Game is over" (toPlay stalemate) (OFF)
   ]

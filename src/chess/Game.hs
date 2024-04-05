@@ -57,18 +57,6 @@ getCurrentPlayer ChessGame{toPlay=tp} = case tp of
     ON c -> Just c
 
 
-    --let blackKingInCheck = kingIsInCheck Black
-
-    {-
-    infer who the current player is
-    check if they are putting themselves in check
-    check then if they are checking the opposite player
-    if they are, figure out if the other player can get out of check or not -- this decides checkmate
-    if no player is in check, infer whether or not the opposite player is in statelmate
-    
-    if 
-    -}
-
 
 --Checks whether or not the king of a given color is in check by seeing if it's targeted by any of its enemies
 kingIsInCheck :: Color -> S.Set Move -> Board -> Bool
@@ -77,14 +65,6 @@ kingIsInCheck friendlyColor enemyMoves b = not $ null [lookupB (new_square m) b 
                 Occupied (Piece King someColor _) -> someColor==friendlyColor
                 _ -> False
             ]
-
-kingIsInCheckDebug :: Color -> S.Set Move -> Board -> [SquareContent]
-kingIsInCheckDebug friendlyColor enemyMoves b = [lookupB (new_square m) b | m <- S.toList enemyMoves,
-            case lookupB (new_square m) b of
-                Occupied (Piece King someColor _) -> someColor==friendlyColor
-                _ -> False
-            ]
-
 
 
 --Given a moveset and a target square, return a subset containing the moves who end up at the target
@@ -100,6 +80,9 @@ inCheckAfterMove m myColor b =
 
 canGetOutOfCheck :: Color -> Board -> Bool
 canGetOutOfCheck c b = or [not $ inCheckAfterMove m c b | m <- S.toList (getAllColorMoves c b)]
+
+hasLegalMoves :: Color -> S.Set Move -> Board -> Bool
+hasLegalMoves c friend b = or [not (inCheckAfterMove m c b) | m <- S.toList friend]
 
 --Castling wrapper
 castle :: PieceType -> ChessGame -> ChessGame
@@ -129,15 +112,20 @@ evaluateGameState :: ChessGame -> ChessGame
 evaluateGameState g@(ChessGame{board=b, gameState=gs}) =
     let allBlackMoves = getAllColorMoves Black b
         allWhiteMoves = getAllColorMoves White b
+
         whiteIsInCheck = kingIsInCheck White allBlackMoves b
+        whiteCantMove = not $ hasLegalMoves White allWhiteMoves b
+
         blackIsInCheck = kingIsInCheck Black allWhiteMoves b
+        blackCantMove = not $ hasLegalMoves Black allBlackMoves b
+
         newState = case toPlay g of
             OFF -> gs
             ON White -> if whiteIsInCheck then InCheck White else
                      if blackIsInCheck && not (canGetOutOfCheck Black b) then CheckMate Black else
-                     if blackIsInCheck then InCheck Black else if null allWhiteMoves then Stalemate else Active
+                     if blackIsInCheck then InCheck Black else if blackCantMove then Stalemate else Active
             ON Black -> if blackIsInCheck then InCheck Black else
                      if whiteIsInCheck && not (canGetOutOfCheck White b) then CheckMate White else
-                     if whiteIsInCheck then InCheck White else if null allWhiteMoves then Stalemate else Active
+                     if whiteIsInCheck then InCheck White else if whiteCantMove then Stalemate else Active
       in g{gameState=newState}
 

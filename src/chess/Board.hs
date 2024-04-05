@@ -173,6 +173,9 @@ makeMove' m@(Move _ start stop ) forced board =
 makeMove :: Move -> Board -> Maybe Board
 makeMove m = makeMove' m False
 
+makeMove'' :: Square -> Square -> Board -> Maybe Board
+makeMove'' start stop b = let p = lookupB start b in
+  if isPiece p then makeMove (Move (justPiece p) start stop)  b else Nothing
 
 {- kingIsInCheck :: Color -> Board -> Bool
 kingIsInCheck c b = not (null listOfAllTargets)
