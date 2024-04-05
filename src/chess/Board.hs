@@ -5,15 +5,6 @@ module Chess.Board (module Chess.Board) where
 
 --Local imports
 import Chess.Piece
-    ( Delta,
-      Piece(Piece, pieceColor, pieceType, hasMoved),
-      PieceType(Pawn, Rook, Knight, Bishop, Queen, King),
-      Color(..),
-      startP,
-      pieceToChar,
-      getMovementPattern,
-      MovementPattern(deltas, continous),
-      oppositeColor)
 
 --Other imports
 import qualified Data.Map as M
@@ -113,6 +104,12 @@ isEmpty s = case s of
 isEmptySquare :: Square -> Board -> Bool
 isEmptySquare s b = isEmpty $ lookupB s b
 
+isFriendlyTo :: Color -> SquareContent -> Bool
+isFriendlyTo c s = isPiece s && (c==(pieceColor $ justPiece s))
+
+isEnemyTo :: Color -> SquareContent -> Bool
+isEnemyTo c s = not $ isFriendlyTo c s
+
 isValidSquare :: Square -> Bool
 isValidSquare (x,y) = (x >= 0 &&  x <= 7) && (y >= 0 && y <= 7)
 
@@ -177,17 +174,6 @@ makeMove'' :: Square -> Square -> Board -> Maybe Board
 makeMove'' start stop b = let p = lookupB start b in
   if isPiece p then makeMove (Move (justPiece p) start stop)  b else Nothing
 
-{- kingIsInCheck :: Color -> Board -> Bool
-kingIsInCheck c b = not (null listOfAllTargets)
-  where
-    listOfAllTargets = [lookupB (new_square m) b | m <- S.toList (getAllColorMoves (oppositeColor c) b),
-      case lookupB (new_square m) b of
-        Occupied (Piece King someColor _) -> someColor==c
-        _ -> False
-      ] -}
-
-
-
 
 --Return all legal moves for a given board
 getAllMoves :: Board -> S.Set Move
@@ -198,7 +184,7 @@ getAllColorMoves :: Color -> Board -> S.Set Move
 getAllColorMoves c b = S.unions $ [getPieceMoves (x, y) | x <- [0 .. 7], y <- [0 .. 7]]
   where
     getPieceMoves sq = case lookupB sq b of
-      Occupied p@(Piece {pieceColor=colorOfPiece})| colorOfPiece == c -> getMoves (p,sq) b
+      Occupied p@(Piece _ colorOfPiece _)| colorOfPiece == c -> getMoves (p,sq) b
       _ -> S.empty
 
 
@@ -255,13 +241,13 @@ castleKing side c b = if notElem side [King, Queen] then Nothing else do
                   else if c==White then [(4,0),(0,0)] else [(4,7),(0,7)]
     let squares = if side==King then if c==White then [(5,0),(6,0)] else [(5,7),(6,7)]
                   else if c==White then [(2,0),(3,0)] else [(1,7),(2,7),(3,7)]
-    
+
     let safeSide = not $ or [new_square m `elem` squares || new_square m==kingPosition | m <- (enemyMoves)]
     let emptySide = and [lookupB s b == Empty | s <- squares]
     let unmovedSide = all (\s -> case lookupB s b of
                                       Occupied p -> not (hasMoved p)
-                                      _ -> True) piecePositions 
-    
+                                      _ -> True) piecePositions
+
     if not (emptySide && safeSide && unmovedSide) then Nothing
     else if side==King then kingsideCastle b c
     else queensideCastle b c
@@ -279,7 +265,7 @@ castleKing side c b = if notElem side [King, Queen] then Nothing else do
           case intermediate of
             Nothing -> Nothing
             Just a -> makeMove' (Move (Piece King color True) (4,y) (2,y)) True a
-        
+
 
 
 --Collect the possible moves for a piece in a given position
