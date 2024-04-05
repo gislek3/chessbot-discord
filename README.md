@@ -1,5 +1,10 @@
 TODO:<br>
 - Clean up exports of modules, try to minimize, move functions as needed, split modules as needed
+- Implement takeback command
+- Implement en passant
+- Implement flipping the display
+- Implement more custom starts (endgame practice) (robot doesn't respond / offline multiplayer lmao)
+- Make the robot
 
 # chess221
 <h2>"What is this?"</h2>
