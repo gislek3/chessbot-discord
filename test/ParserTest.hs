@@ -8,7 +8,7 @@ import TestHelpers (isParseError)
 import Parsing.ChessParser
 import Chess.Piece (PieceType(Queen, King))
 import Parsing.ChessParser (ChessCommand(..))
-import Parsing.ChessParser (ChessCommand(CastleCmd))
+import Parsing.ChessParser (ChessCommand(CastleCmd, TakebackCmd))
 
 
 testParseMoveCmd :: Test
@@ -32,14 +32,24 @@ testSimpleCmds = TestCase $ do
     let resign_in = "resign"
     let flip_out = Right FlipCmd
     let resign_out = Right ResignCmd
+    let turn_in = "who's turn is it now?"
+    let turn_out = Right TurnCmd
+    let takeback_in = "regret"
+    let takeback_out = Right TakebackCmd
     assertEqual "Converting the 'flip' input into a valid Cmd" flip_out (parseInput flip_in)
     assertEqual "Converting the 'resign' input into a valid Cmd" resign_out (parseInput resign_in)
+    assertEqual "Converting the 'turn' input into a valid Cmd" turn_out (parseInput turn_in)
+    assertEqual "Converting the 'takeback' input into a valid Cmd" takeback_out (parseInput takeback_in)
 
 testCastleCmd :: Test
 testCastleCmd = TestCase $ do
   let queen = "castle queen"
+  let king = "castle kingside"
   let queen_out = Right (CastleCmd Queen)
+  let king_out = Right (CastleCmd King)
   assertEqual "Input 'castle queen' turns into CastleCmd Queen" queen_out (parseInput queen)
+  assertEqual "Input 'castle kingside' turns into CastleCmd King" king_out (parseInput king)
+
 
 tests :: Test
 tests = TestList [
