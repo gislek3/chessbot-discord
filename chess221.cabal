@@ -27,7 +27,7 @@ source-repository head
 
 library
   exposed-modules:
-      Lib, Chess.Board, Chess.Game, Chess.Piece
+      Lib, Chess.Board, Chess.Game, Chess.Piece, Computer.Evaluation
   other-modules:
       Paths_chess221
   hs-source-dirs:
@@ -63,7 +63,7 @@ test-suite chess221-test
   main-is: Spec.hs
   other-modules:
       Paths_chess221, TestHelpers, ParserTest, GameTest, BoardTest,
-      Parsing.ChessParser, Chess.Game, Chess.Board, Chess.Piece
+      Parsing.ChessParser, Chess.Game, Chess.Board, Chess.Piece, Computer.Evaluation
   hs-source-dirs:
       test, src, app
   ghc-options: -Wall -Wcompat -Widentities -Wincomplete-record-updates -Wincomplete-uni-patterns -Wmissing-export-lists -Wmissing-home-modules -Wpartial-fields -Wredundant-constraints -threaded -rtsopts -with-rtsopts=-N

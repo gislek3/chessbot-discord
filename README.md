@@ -1,3 +1,6 @@
+TODO:<br>
+- Clean up exports of modules, try to minimize, move functions as needed, split modules as needed
+
 # chess221
 <h2>"What is this?"</h2>
 <p>
