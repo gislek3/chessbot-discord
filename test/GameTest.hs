@@ -4,8 +4,6 @@ import Test.HUnit
 import Chess.Game
 import Chess.Piece
 import Chess.Board
-import qualified Data.Set as S (toList, empty)
-import Data.Maybe (isJust, fromJust)
 import TestHelpers
 
 game :: ChessGame
