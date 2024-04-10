@@ -48,8 +48,9 @@ pieceToChar p = case p of
 
 ---------------------------------------------------------------------------------------------------------
 
-
+--Delta
 type Delta = (Int, Int)
+
 
 data MovementPattern = MovementPattern {
     deltas :: [Delta],
@@ -61,6 +62,8 @@ getPawnMovement c hm = case c of
     White -> if hm then [(0, 1)] else [(0,1),(0,2)]
     Black -> if hm then [(0, -1)] else [(0,-1),(0,-2)]
 
+getCircle :: [Delta]
+getCircle = [(-1, -1), (-1, 0), (-1, 1), (0, -1), (0, 1), (1, -1), (1, 0), (1, 1)]
 
 getMovementPattern :: PieceType -> MovementPattern
 getMovementPattern pt = case pt of

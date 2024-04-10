@@ -62,7 +62,7 @@ test-suite chess221-test
   type: exitcode-stdio-1.0
   main-is: Spec.hs
   other-modules:
-      Paths_chess221, TestHelpers, ParserTest, GameTest, BoardTest,
+      Paths_chess221, TestHelpers, ParserTest, GameTest, BoardTest, EvaluationTest
       Parsing.ChessParser, Chess.Game, Chess.Board, Chess.Piece, Computer.Evaluation
   hs-source-dirs:
       test, src, app

@@ -8,9 +8,10 @@ import Chess.Piece
 
 --Other imports
 import qualified Data.Map as M
-import Data.Maybe (fromJust, isNothing, isJust)
+import Data.Maybe (fromJust, isNothing, isJust, catMaybes, listToMaybe)
 import qualified Data.Text as T
 import qualified Data.Set as S
+import Chess.Piece (getCircle)
 
 
 -- Using Data.Map to inherit a lot of instances
@@ -42,6 +43,9 @@ place s p b= if (isValidSquare s) then M.insert s p b else b
 -- Clear a square on the board, does nothing if square is empty by default
 clear :: Square -> Board -> Board
 clear = M.delete
+
+squareList :: [Square]
+squareList = [(x,y) | x<-[0..7], y<-[0..7]]
 
 --data SquareContent = Illegal | Empty | Occupied Piece | EnemyPiece Piece | FriendlyPiece Piece
 --  deriving (Show, Eq)
@@ -115,6 +119,9 @@ isValidSquare (x,y) = (x >= 0 &&  x <= 7) && (y >= 0 && y <= 7)
 
 isValidSquare' :: Move -> Bool
 isValidSquare' (Move _ start end) = isValidSquare start && isValidSquare end
+
+getAllPieces :: Board -> [Piece]
+getAllPieces b = [justPiece (lookupB s b) | s <- squareList, isPiece (lookupB s b)]
 
 -- Makes the board intoa human-readable Text representation
 showB :: Board -> T.Text
@@ -191,6 +198,14 @@ getAllColorMoves c b = S.unions $ [getPieceMoves (x, y) | x <- [0 .. 7], y <- [0
 getNextSquare :: Delta -> Square -> Maybe Square
 getNextSquare (rowD, colD) (row, col) = if isValidSquare (row+rowD, col+colD) then Just (row+rowD, col+colD)  else Nothing
 
+getSurroundings :: Square -> [Square]
+getSurroundings s = catMaybes [getNextSquare d s | d <- getCircle]
+
+-- Function to find the king's square for a given color
+getKingSquare :: Color -> Board -> Square
+getKingSquare color = fst . head . filter isKing . M.assocs
+  where
+    isKing (_, piece) = pieceType piece == King && pieceColor piece == color
 
 --TODO: optimize code
 -- TODO: comment
