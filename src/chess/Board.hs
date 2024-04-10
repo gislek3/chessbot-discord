@@ -187,12 +187,13 @@ getAllColorMoves c b = S.unions $ [getPieceMoves (x, y) | x <- [0 .. 7], y <- [0
       Occupied p@(Piece _ colorOfPiece _)| colorOfPiece == c -> getMoves (p,sq) b
       _ -> S.empty
 
-
+--This is probably a helper function
 getNextSquare :: Delta -> Square -> Maybe Square
 getNextSquare (rowD, colD) (row, col) = if isValidSquare (row+rowD, col+colD) then Just (row+rowD, col+colD)  else Nothing
 
 
--- Update the followDelta function to consider continuous movement
+--TODO: optimize code
+-- TODO: comment
 followDelta :: Piece -> Board -> Square -> Delta -> Color -> Bool -> S.Set Move
 followDelta p board start delta c continuous = go start
   where
@@ -231,7 +232,7 @@ getPawnMoves ((p@(Piece {pieceType = Pawn, pieceColor = c, hasMoved = hm}), (x, 
 getPawnMoves _ _= error "getPawnMoves called with non-pawn argument"
 
 
-
+--TODO: optimize code
 --Returns potential castling squares
 castleKing :: PieceType -> Color -> Board -> Maybe Board
 castleKing side c b = if notElem side [King, Queen] then Nothing else do

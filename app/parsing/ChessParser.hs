@@ -50,15 +50,14 @@ moveParser :: Parser ChessCommand
 moveParser = do
   start <- squareParser
   space
-  end <- squareParser
-  return $ MoveCmd start end
+  MoveCmd start <$> squareParser
 
 --Castle commands should come in the form "castle queenside/kingside"
 castleParser :: Parser ChessCommand
 castleParser = do
   _ <- string' "castle"
   space
-  side <- choice 
+  side <- choice
     [ Queen <$ string' "queen"
     , King <$ string' "king"
     ]
@@ -87,6 +86,7 @@ showParser = (string' "show" <|> string' "print") >> return ShowCmd
 --A parser for the "reset" command
 resetParser :: Parser ChessCommand
 resetParser = (string' "reset" <|> string' "start over") >> return ResetCmd
+
 
 -- Combine all parsers to parse any of the commands.
 commandParser :: Parser ChessCommand

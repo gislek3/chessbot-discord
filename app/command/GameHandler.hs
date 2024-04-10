@@ -1,5 +1,7 @@
 {-# LANGUAGE OverloadedStrings #-}  -- allows "string literals" to be Text
 
+
+
 module Command.GameHandler where
 
 --Discord imports
@@ -36,8 +38,8 @@ data CommandResult = CommandResult {
 } deriving (Show, Eq)
 
 --Create a command handler which recieves user input, parses and executes commands on games
-setupGameHandler :: GameRegistry -> (UserId -> T.Text -> IO CommandResult)
-setupGameHandler gameRegistry = \userId inputText ->
+setupGameHandler :: GameRegistry -> UserId -> T.Text -> IO CommandResult
+setupGameHandler gameRegistry userId inputText =
   atomically $ do --as we want to read the shared registry, we need an atomic action
     registry <- readTVar gameRegistry --read the registry
     let game = M.findWithDefault defaultStart userId registry --find the user's session

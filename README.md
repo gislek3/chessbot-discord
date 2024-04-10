@@ -1,10 +1,18 @@
 TODO:<br>
+221:<br>
+- Use the actual State monad in GameHandler / Game instead of your homebrew
+- Use the Reader monad in order to cut down on "game" and "board" parameters?
+<br>
+General:<br>
 - Clean up exports of modules, try to minimize, move functions as needed, split modules as needed
 - Implement takeback command
 - Implement en passant
 - Implement flipping the display
-- Implement more custom starts (endgame practice) (robot doesn't respond / offline multiplayer lmao)
-- Make the robot
+- Implement more custom starts (endgame practice) (robot doesn't respond / offline multiplayer lmao) (simulation, which is that both colors are controlled by robot) maybe instead of botColor you should do an enum like whiteControlled Player and blackControlled Player, where Player = Human | Computer
+<br>
+Make the robot:<br>
+- Make a function that returns a random legal move for a given color
+- Make it so that the non-player 
 
 # chess221
 <h2>"What is this?"</h2>
