@@ -32,11 +32,11 @@ evaluateMaterial :: Board -> Int
 evaluateMaterial b = sum $ map pieceValue pieces where
     pieces = getAllPieces b
     pieceValue (Piece pieceType c _) = let m = if c==White then 1 else (-1) in case pieceType of
-        Pawn   -> 35*m
-        Knight -> 100*m
-        Bishop -> 130*m
-        Rook   -> 225*m
-        Queen  -> 450*m
+        Pawn   -> 100*m
+        Knight -> 300*m
+        Bishop -> 350*m
+        Rook   -> 600*m
+        Queen  -> 900*m
         King   -> 0*m
 
 

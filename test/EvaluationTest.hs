@@ -19,7 +19,8 @@ testBasicEvaluation = TestCase $ do
   assertBool "e4 is a valid move" (isJust e2_e4)
   assertNotEqual "White has a slight advantage after opening move" (evaluate $ fromJust e2_e4) (0)
   let removed_knight = clear (1,0) $ fromJust e2_e4
-  assertEqual "debug" M.empty (debugEvaluation removed_knight)
+  let e7_e5 = makeMove (Move (Piece Pawn Black False) (4,6) (4,4)) removed_knight
+  assertEqual "debug" M.empty (debugEvaluation $ fromJust e7_e5)
 
   
 

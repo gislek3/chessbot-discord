@@ -181,18 +181,29 @@ makeMove'' :: Square -> Square -> Board -> Maybe Board
 makeMove'' start stop b = let p = lookupB start b in
   if isPiece p then makeMove (Move (justPiece p) start stop)  b else Nothing
 
+-- Helper function to apply a move to the board and check legality
+isLegalMove :: Move -> Board -> Bool
+isLegalMove m b = isJust (makeMove m b)
 
---Return all legal moves for a given board
+--Return all valid moves for a given board
 getAllMoves :: Board -> S.Set Move
 getAllMoves b = S.union (getAllColorMoves White b) (getAllColorMoves Black b)
 
---Return all legal moves for a specific color
+--Return all legal moves for a given board
+getAllLegalMoves :: Board -> S.Set Move
+getAllLegalMoves b = S.union (getAllLegalColorMoves White b) (getAllLegalColorMoves Black b)
+
+--Return all valid moves for a specific color
 getAllColorMoves :: Color -> Board -> S.Set Move
 getAllColorMoves c b = S.unions $ [getPieceMoves (x, y) | x <- [0 .. 7], y <- [0 .. 7]]
   where
     getPieceMoves sq = case lookupB sq b of
       Occupied p@(Piece _ colorOfPiece _)| colorOfPiece == c -> getMoves (p,sq) b
       _ -> S.empty
+
+--Return all legal moves for a given color
+getAllLegalColorMoves :: Color -> Board -> S.Set Move
+getAllLegalColorMoves c b = S.filter (`isLegalMove` b) (getAllColorMoves c b)
 
 --This is probably a helper function
 getNextSquare :: Delta -> Square -> Maybe Square
@@ -206,6 +217,7 @@ getKingSquare :: Color -> Board -> Square
 getKingSquare color = fst . head . filter isKing . M.assocs
   where
     isKing (_, piece) = pieceType piece == King && pieceColor piece == color
+
 
 --TODO: optimize code
 -- TODO: comment

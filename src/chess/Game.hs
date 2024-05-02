@@ -93,6 +93,7 @@ castle pt g@(ChessGame {toPlay=ON c}) = if not $ elem pt [King, Queen] then same
 castle _ g = same g
 
 
+
 move :: Square -> Square -> ChessGame -> ChessGame
 move _ _ g@(ChessGame{toPlay=OFF}) = same g
 move start end g@(ChessGame{board=b, toPlay=ON gc}) = let p = lookupB start b in
@@ -107,6 +108,10 @@ move start end g@(ChessGame{board=b, toPlay=ON gc}) = let p = lookupB start b in
                     Stalemate -> off new
                     Active -> swap new
                     _ -> swap new
+
+move' :: Move -> ChessGame -> ChessGame
+move' (Move _ a b) = move a b
+
 
 evaluateGameState :: ChessGame -> ChessGame
 evaluateGameState g@(ChessGame{board=b, gameState=gs}) =
@@ -129,3 +134,6 @@ evaluateGameState g@(ChessGame{board=b, gameState=gs}) =
                      if whiteIsInCheck then InCheck White else if whiteCantMove then Stalemate else Active
       in g{gameState=newState}
 
+
+isOver :: ChessGame -> Bool
+isOver g = gameState g /= Active
