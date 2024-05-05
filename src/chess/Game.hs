@@ -94,13 +94,19 @@ move' (Move _ a b) = move a b
 
 
 --If your opponent is a computer, automatically get response
-respond :: ChessGame -> ChessGame
+{- respond :: ChessGame -> ChessGame
 respond g@ChessGame{board=b, toPlay= ON c} =
     case getRandomMove b c of
         Just rMove -> move' rMove g
         Nothing -> g{gameState=Failed}
-respond g = g{gameState=Failed}
+respond g = g{gameState=Failed} -}
 
+respond :: ChessGame -> ChessGame
+respond g@ChessGame{board=b, toPlay= ON c} =
+    case getBestMove b c 8 of
+        Just bMove -> move' bMove g
+        Nothing -> g{gameState=Failed}
+respond g = g{gameState=Failed}
 
 evaluateGameState :: ChessGame -> ChessGame
 evaluateGameState g@(ChessGame{board=b, gameState=gs}) =

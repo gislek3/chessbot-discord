@@ -169,8 +169,10 @@ makeMove' m@(Move _ start stop ) forced board =
     is_legal one two b = forced || case lookupB start b of
       Occupied p -> do
         let movingPieceMoves = getMoves (p, one) b
+        let pColor = pieceColor p
         let forceMoveOnBoard = makeMove' m True board
-        isJust forceMoveOnBoard && S.member (Move p one two) movingPieceMoves -- && not (kingIsInCheck (pieceColor movingPiece) (fromJust forceMoveOnBoard)))
+        let isValid = isJust forceMoveOnBoard && S.member (Move p one two) movingPieceMoves
+        isValid && not (kingIsInCheck' pColor (fromJust forceMoveOnBoard))
       Empty -> False
       Illegal -> error "Illegal squares passed the initial check."
 
@@ -226,6 +228,11 @@ kingIsInCheck friendlyColor enemyMoves b = not $ null [lookupB (new_square m) b 
                 Occupied (Piece King someColor _) -> someColor==friendlyColor
                 _ -> False
             ]
+
+kingIsInCheck' :: Color -> Board -> Bool
+kingIsInCheck' friendlyColor b = let enemyMoves = getAllColorMoves (oppositeColor friendlyColor) b
+  in kingIsInCheck friendlyColor enemyMoves  b 
+
 
 kingIsInCheckmate :: Color -> Board -> Bool
 kingIsInCheckmate friendlyColor b = let enemyMoves = getAllColorMoves (oppositeColor friendlyColor) b in

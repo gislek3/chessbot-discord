@@ -211,6 +211,19 @@ testCastle = TestList [
   ]
 
 
+testLegalMoves :: Test
+testLegalMoves = TestList [
+    TestCase $ do
+      let placed = place (3,4) (Piece Rook Black True) empty
+      let wKing = place (4,0) (Piece King White True) placed
+      let wKingMoves = getAllLegalColorMoves White wKing
+      let p = justPiece (lookupB (4,0) wKing)
+      let illegal = Move p (4,0) (3,0)
+      assertBool "Moved is not classified as legal" (not $ isLegalMove illegal wKing)
+      assertBool "Does not consider putting yourself in check" (notElem illegal wKingMoves)
+  ]
+
+
 tests :: Test
 tests = TestList [
     TestLabel "testLookup" testLookup,
@@ -221,5 +234,6 @@ tests = TestList [
     TestLabel "testWhitePawnMovement" testWhitePawnMovement,
     TestLabel "testBlackPawnMovement" testBlackPawnMovement,
     TestLabel "testPromotion" testPromotion,
-    TestLabel "testCastle" testCastle
+    TestLabel "testCastle" testCastle,
+    TestLabel "testLegalMoves" testLegalMoves
     ]

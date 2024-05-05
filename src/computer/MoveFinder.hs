@@ -8,39 +8,38 @@ import Data.List (maximumBy, minimumBy)
 import Data.Function (on)
 import qualified Data.Set as S
 import Chess.Board (gameIsOver)
+import Data.List (sortBy)
 
 -- Recursive minimax function with alpha-beta pruning
-minimax :: Board -> Color -> Int -> Int -> Int -> Bool -> (Int, Maybe Move)
-minimax board color depth alpha beta maximizingPlayer =
-    if depth == 0 || isTerminal
+minimax :: Board -> Color -> Int -> (Int, Maybe Move)
+minimax board color depth =
+    if depth == 0 || gameIsOver board
         then (evaluate board, Nothing)
-        else go moves alpha beta (if maximizingPlayer then -9999 else 9999, Nothing)
+        else chooseBestMove (getTopMoves board color)
   where
-    isTerminal = gameIsOver board  -- Assuming you have a function to check game over conditions
-    moves = S.toList $ getAllLegalColorMoves color board
+    chooseBestMove :: [(Int, Move)] -> (Int, Maybe Move)
+    chooseBestMove [] = (0, Nothing)
+    chooseBestMove ((score, move):rest) =
+        let (nextScore, _) = minimax (fromJust $ makeMove move board) (oppositeColor color) (depth - 1)
+            newScore = score - nextScore
+        in if null rest || newScore > bestScore
+            then (newScore, Just move)
+            else chooseBestMove rest
+        where
+            bestScore = if null rest then 0 else fst $ head rest
 
-    go :: [Move] -> Int -> Int -> (Int, Maybe Move) -> (Int, Maybe Move)
-    go [] _ _ best = best
-    go (m:ms) a b (bestVal, bestMove) =
-        case makeMove m board of
-            Nothing -> go ms a b (bestVal, bestMove)
-            Just newBoard ->
-                let newColor = oppositeColor color
-                    (score, _) = minimax newBoard newColor (depth - 1) a b (not maximizingPlayer)
-                in if maximizingPlayer
-                    then
-                        if score > bestVal
-                            then go ms (max a score) b (score, Just m)
-                            else go ms a b (bestVal, bestMove)
-                    else
-                        if score < bestVal
-                            then go ms a (min b score) (score, Just m)
-                            else go ms a b (bestVal, bestMove)
+    getTopMoves :: Board -> Color -> [(Int, Move)]
+    getTopMoves b c = take depth $ sortBy (compare `on` fst) $ map (\m -> (evaluateBoardAfterMove m, m)) $ S.toList $ getAllLegalColorMoves c b
+
+    evaluateBoardAfterMove :: Move -> Int
+    evaluateBoardAfterMove move =
+        let newBoard = fromJust $ makeMove move board
+        in evaluate newBoard
 
 -- Public function to get the best move for the current player
 getBestMove :: Board -> Color -> Int -> Maybe Move
 getBestMove board color depth =
-    snd $ minimax board color depth (-9999) 9999 True
+    snd $ minimax board color depth
 
 -- Function to get a random move from the list of legal moves
 getRandomMove :: Board -> Color -> Maybe Move
