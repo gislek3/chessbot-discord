@@ -68,6 +68,8 @@ processCommand command game =
         CheckMate White -> CommandResult (Modified Active) "Checkmate! Black has won the game." attempt
         CheckMate Black -> CommandResult (Modified Active) "Checkmate! White has won the game." attempt
         Stalemate -> CommandResult (Modified Active) "Stalemate! It's a draw." attempt
+        Drawn -> CommandResult (Modified Active) "Well played, it's a draw." attempt
+        Failed -> CommandResult (Modified Active) "Sorry, I was unable to make a move." attempt
         _ -> CommandResult (Modified Active) "" attempt
       else case gameState attempt of
         Active -> CommandResult (Unmodified IllegalMove) "Sorry, that move is not possible." game

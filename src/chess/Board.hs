@@ -219,6 +219,41 @@ getKingSquare color = fst . head . filter isKing . M.assocs
     isKing (_, piece) = pieceType piece == King && pieceColor piece == color
 
 
+--Checks whether or not the king of a given color is in check by seeing if it's targeted by any of its enemies
+kingIsInCheck :: Color -> S.Set Move -> Board -> Bool
+kingIsInCheck friendlyColor enemyMoves b = not $ null [lookupB (new_square m) b | m <- S.toList enemyMoves,
+            case lookupB (new_square m) b of
+                Occupied (Piece King someColor _) -> someColor==friendlyColor
+                _ -> False
+            ]
+
+kingIsInCheckmate :: Color -> Board -> Bool
+kingIsInCheckmate friendlyColor b = let enemyMoves = getAllColorMoves (oppositeColor friendlyColor) b in
+  (kingIsInCheck friendlyColor enemyMoves b) && not (canGetOutOfCheck friendlyColor b)
+
+
+gameIsOver :: Board -> Bool
+gameIsOver b = (kingIsInCheckmate White b) || (kingIsInCheckmate Black b)
+
+--Given a moveset and a target square, return a subset containing the moves who end up at the target
+movesThatReachSquare :: S.Set Move -> Square -> S.Set Move
+movesThatReachSquare moves target = S.fromList [m | m <- S.toList moves, new_square m == target]
+
+--Checks that after a given move; if the supplied color's king is in check
+inCheckAfterMove :: Move -> Color -> Board -> Bool
+inCheckAfterMove m myColor b =
+    case makeMove m b of
+        Just movedBoard -> kingIsInCheck myColor (getAllColorMoves (oppositeColor myColor) movedBoard) movedBoard
+        Nothing -> False
+
+canGetOutOfCheck :: Color -> Board -> Bool
+canGetOutOfCheck c b = or [not $ inCheckAfterMove m c b | m <- S.toList (getAllColorMoves c b)]
+
+hasLegalMoves :: Color -> S.Set Move -> Board -> Bool
+hasLegalMoves c friend b = or [not (inCheckAfterMove m c b) | m <- S.toList friend]
+
+
+
 --TODO: optimize code
 -- TODO: comment
 followDelta :: Piece -> Board -> Square -> Delta -> Color -> Bool -> S.Set Move

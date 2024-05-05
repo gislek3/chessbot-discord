@@ -1,32 +1,28 @@
-module COMPUTER.MoveFinder (getBestMove) where
+module Computer.MoveFinder (getBestMove, getRandomMove) where
 
 import Chess.Board
 import Chess.Piece
-import Chess.Game
 import Computer.Evaluation
 import Data.Maybe (fromJust)
 import Data.List (maximumBy, minimumBy)
 import Data.Function (on)
 import qualified Data.Set as S
-
+import Chess.Board (gameIsOver)
 
 -- Recursive minimax function with alpha-beta pruning
 minimax :: Board -> Color -> Int -> Int -> Int -> Bool -> (Int, Maybe Move)
-minimax b color depth alpha beta maximizingPlayer =
+minimax board color depth alpha beta maximizingPlayer =
     if depth == 0 || isTerminal
-        then (evaluate b, Nothing)
+        then (evaluate board, Nothing)
         else go moves alpha beta (if maximizingPlayer then -9999 else 9999, Nothing)
   where
-    isTerminal = isOver game
-    game = ChessGame { board = b, gameState = evaluateGameState initialGameState, updated = False }
-    initialGameState = ChessGame { board = b, toPlay = ON color, playerColor = color, gameState = Active, updated = False }
-
-    moves = S.toList $ getAllColorMoves color b
+    isTerminal = gameIsOver board  -- Assuming you have a function to check game over conditions
+    moves = S.toList $ getAllLegalColorMoves color board
 
     go :: [Move] -> Int -> Int -> (Int, Maybe Move) -> (Int, Maybe Move)
     go [] _ _ best = best
     go (m:ms) a b (bestVal, bestMove) =
-        case makeMove m b of
+        case makeMove m board of
             Nothing -> go ms a b (bestVal, bestMove)
             Just newBoard ->
                 let newColor = oppositeColor color
@@ -42,12 +38,12 @@ minimax b color depth alpha beta maximizingPlayer =
                             else go ms a b (bestVal, bestMove)
 
 -- Public function to get the best move for the current player
-getBestMove :: ChessGame -> Int -> Maybe Move
-getBestMove g@(ChessGame { board = b, toPlay = ON color }) depth =
-    snd $ minimax b color depth (-9999) 9999 True
-getBestMove _ _ = Nothing
+getBestMove :: Board -> Color -> Int -> Maybe Move
+getBestMove board color depth =
+    snd $ minimax board color depth (-9999) 9999 True
 
-
-getRandomMove :: ChessGame -> Maybe Move
-getRandomMove g@(ChessGame{toPlay=tp, board=b}) = let possible = getAllLegalColorMoves tp b
-    in if null possible then Nothing else S.elemAt 0 possible
+-- Function to get a random move from the list of legal moves
+getRandomMove :: Board -> Color -> Maybe Move
+getRandomMove board color = 
+    let moves = S.toList $ getAllLegalColorMoves color board
+    in if null moves then Nothing else Just $ head moves

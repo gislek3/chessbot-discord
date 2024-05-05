@@ -77,4 +77,4 @@ debugEvaluation b = M.fromList [
 
 --TODO: replace with Reader-monad to save less parameters bro lets gooooo!!!!
 evaluate :: Board -> Int
-evaluate b = sum [evaluateKingSafety b, evaluateMaterial b, evaluateSquares b]
+evaluate b = sum [evaluateMaterial b, evaluateSquares b]

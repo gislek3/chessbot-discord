@@ -2,11 +2,13 @@ module Chess.Game (module Chess.Game) where
 
 import Chess.Board
 import Chess.Piece
+import Computer.MoveFinder
+import Data.Maybe (isJust, fromJust)
 
 import qualified Data.Set as S
 
 
-data GameState = Active | Resigned | Drawn | InCheck Color | CheckMate Color | Stalemate | Reset deriving (Show, Eq)
+data GameState = Active | Resigned | Drawn | InCheck Color | CheckMate Color | Stalemate | Reset | Failed deriving (Show, Eq)
 data ToPlay = ON Color | OFF deriving (Show, Eq)
 
 -- CommandResult might include the outcome, a message for the user, and optionally the current state of the board.
@@ -31,7 +33,10 @@ defaultStart = ChessGame {
 swap :: ChessGame -> ChessGame
 swap g = case toPlay g of
     OFF -> same g
-    ON c -> g{toPlay=ON $ oppositeColor c, updated=True}
+    ON c -> if c==playerColor g then
+            respond g{toPlay=ON $ oppositeColor c}
+        else
+            g{toPlay=ON $ oppositeColor c, updated=True}
 
 same :: ChessGame -> ChessGame
 same g = g{updated=False}
@@ -58,32 +63,6 @@ getCurrentPlayer ChessGame{toPlay=tp} = case tp of
 
 
 
---Checks whether or not the king of a given color is in check by seeing if it's targeted by any of its enemies
-kingIsInCheck :: Color -> S.Set Move -> Board -> Bool
-kingIsInCheck friendlyColor enemyMoves b = not $ null [lookupB (new_square m) b | m <- S.toList enemyMoves,
-            case lookupB (new_square m) b of
-                Occupied (Piece King someColor _) -> someColor==friendlyColor
-                _ -> False
-            ]
-
-
---Given a moveset and a target square, return a subset containing the moves who end up at the target
-movesThatReachSquare :: S.Set Move -> Square -> S.Set Move
-movesThatReachSquare moves target = S.fromList [m | m <- S.toList moves, new_square m == target]
-
---Checks that after a given move; if the supplied color's king is in check
-inCheckAfterMove :: Move -> Color -> Board -> Bool
-inCheckAfterMove m myColor b =
-    case makeMove m b of
-        Just movedBoard -> kingIsInCheck myColor (getAllColorMoves (oppositeColor myColor) movedBoard) movedBoard
-        Nothing -> False
-
-canGetOutOfCheck :: Color -> Board -> Bool
-canGetOutOfCheck c b = or [not $ inCheckAfterMove m c b | m <- S.toList (getAllColorMoves c b)]
-
-hasLegalMoves :: Color -> S.Set Move -> Board -> Bool
-hasLegalMoves c friend b = or [not (inCheckAfterMove m c b) | m <- S.toList friend]
-
 --Castling wrapper
 castle :: PieceType -> ChessGame -> ChessGame
 castle pt g@(ChessGame {toPlay=ON c}) = if not $ elem pt [King, Queen] then same g else
@@ -100,17 +79,27 @@ move start end g@(ChessGame{board=b, toPlay=ON gc}) = let p = lookupB start b in
     if not (isPiece p) || (gc /= pieceColor (justPiece p)) then same g else
         case makeMove (Move (justPiece p) start end) b of
             Nothing -> same g
-            Just movedBoard -> do
-                let new = evaluateGameState $ g{board = movedBoard}
-                case gameState new of
-                    InCheck color -> if gc==color then same g{board=b} else swap new
-                    CheckMate _ -> off new
-                    Stalemate -> off new
-                    Active -> swap new
-                    _ -> swap new
+            Just movedBoard -> updateGameState g{board=movedBoard}
+
+updateGameState :: ChessGame -> ChessGame
+updateGameState g = let new = evaluateGameState g in
+    case gameState new of
+        CheckMate _ -> off new
+        Stalemate -> off new
+        Active -> swap new
+        _ -> swap new
 
 move' :: Move -> ChessGame -> ChessGame
 move' (Move _ a b) = move a b
+
+
+--If your opponent is a computer, automatically get response
+respond :: ChessGame -> ChessGame
+respond g@ChessGame{board=b, toPlay= ON c} =
+    case getRandomMove b c of
+        Just rMove -> move' rMove g
+        Nothing -> g{gameState=Failed}
+respond g = g{gameState=Failed}
 
 
 evaluateGameState :: ChessGame -> ChessGame
