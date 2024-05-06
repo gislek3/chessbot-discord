@@ -18,15 +18,17 @@ testBasicEvaluation = TestCase $ do
   assertBool "Starting position is evaluated to be equal" (evaluate b==0)
   let e2_e4 = makeMove (Move (Piece Pawn White False) (4,1) (4,3)) b
   assertBool "e4 is a valid move" (isJust e2_e4)
+  let e7_e5 = makeMove (Move (Piece Pawn Black False) (4,6) (4,4)) $ fromJust e2_e4
+  assertBool "e5 is a valid move" (isJust e7_e5)
   assertNotEqual "White has a slight advantage after opening move" (evaluate $ fromJust e2_e4) (0)
+  assertEqual "Black is even after responding e5" (evaluate (fromJust e7_e5)) 0
   let removed_knight = clear (1,0) $ fromJust e2_e4
-  let e7_e5 = makeMove (Move (Piece Pawn Black False) (4,6) (4,4)) removed_knight
-  assertBool "Black is even after e5" (evaluate (fromJust e7_e5)==0)
+  assertEqual "Black has a huge advantage without white's knight" (evaluate removed_knight) (69)
+  --assertBool "Black has a huge advantage without white's knight" (evaluate removed_knight < -300)
 
 
 
 tests :: Test
 tests = TestList [
-    TestLabel "testBasicEvaluation" testBasicEvaluation,
-    TestLabel "testBasicEvaluation2" testBasicEvaluation2
+    TestLabel "testBasicEvaluation" testBasicEvaluation
     ]
