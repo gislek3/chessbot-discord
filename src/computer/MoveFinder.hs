@@ -1,48 +1,53 @@
-module Computer.MoveFinder (getBestMove, getRandomMove) where
+module Computer.MoveFinder (findBestMove) where
 
+import qualified Data.Set as S
+import Data.Maybe (listToMaybe)
+import Data.Ord (comparing)
+import Data.List (maximumBy)
 import Chess.Board
 import Chess.Piece
 import Computer.Evaluation
-import Data.Maybe (fromJust)
-import Data.List (maximumBy, minimumBy)
-import Data.Function (on)
+
+-- Assuming the rest of the Chess.Board module is as defined earlier
+
+-- This function evaluates the best move for a given color on the board
 import qualified Data.Set as S
-import Chess.Board (gameIsOver)
-import Data.List (sortBy)
+import Data.Maybe (listToMaybe)
+import Data.Ord (comparing)
+import Data.List (maximumBy)
 
--- Recursive minimax function with alpha-beta pruning
-minimax :: Board -> Color -> Int -> (Int, Maybe Move)
-minimax board color depth =
-    if depth == 0 || gameIsOver board
-        then (evaluate board, Nothing)
-        else chooseBestMove (getTopMoves board color)
-  where
-    chooseBestMove :: [(Int, Move)] -> (Int, Maybe Move)
-    chooseBestMove [] = (0, Nothing)
-    chooseBestMove ((score, move):rest) =
-        let (nextScore, _) = minimax (fromJust $ makeMove move board) (oppositeColor color) (depth - 1)
-            newScore = score - nextScore
-        in if null rest || newScore > bestScore
-            then (newScore, Just move)
-            else chooseBestMove rest
-        where
-            bestScore = if null rest then 0 else fst $ head rest
+-- Assuming the rest of the Chess.Board module is as defined earlier
 
-    getTopMoves :: Board -> Color -> [(Int, Move)]
-    getTopMoves b c = take depth $ sortBy (compare `on` fst) $ map (\m -> (evaluateBoardAfterMove m, m)) $ S.toList $ getAllLegalColorMoves c b
+-- This function evaluates the best move for a given color on the board
+findBestMove :: Board -> Color -> Maybe Move
+findBestMove board color = 
+    let moves = S.toList $ getAllColorMoves color board
+        scoredMoves = [(move, scoreMove move board) | move <- moves]
+    in fst <$> safeMaximumBy (\(_, score1) (_, score2) -> compare score1 score2) scoredMoves
 
-    evaluateBoardAfterMove :: Move -> Int
-    evaluateBoardAfterMove move =
-        let newBoard = fromJust $ makeMove move board
-        in evaluate newBoard
+-- Score a move based on the resulting board state
+scoreMove :: Move -> Board -> Int
+scoreMove move board = 
+    case makeMove move board of
+        Nothing -> minBound
+        Just newBoard -> 
+            - bestOpponentResponse newBoard (oppositeColor $ pieceColor $ piece move) -- Minimize the opponent's best outcome
 
--- Public function to get the best move for the current player
-getBestMove :: Board -> Color -> Int -> Maybe Move
-getBestMove board color depth =
-    snd $ minimax board color depth
+-- Compute the best response score for the opponent
+bestOpponentResponse :: Board -> Color -> Int
+bestOpponentResponse board color =
+    let responses = S.toList $ getAllColorMoves color board
+        opponentScores = map (\resp -> evaluateMove resp board) responses
+    in if null opponentScores then 0 else maximum opponentScores
 
--- Function to get a random move from the list of legal moves
-getRandomMove :: Board -> Color -> Maybe Move
-getRandomMove board color = 
-    let moves = S.toList $ getAllLegalColorMoves color board
-    in if null moves then Nothing else Just $ head moves
+-- Evaluate a move simply by looking at the board state or a more sophisticated heuristic
+evaluateMove :: Move -> Board -> Int
+evaluateMove move board = 
+    case makeMove move board of
+        Just b -> evaluate b -- Assuming evaluateBoard function exists to evaluate the board
+        Nothing -> minBound
+
+-- Safe maximum by function to prevent errors on empty lists
+safeMaximumBy :: Ord b => ((a, b) -> (a, b) -> Ordering) -> [(a, b)] -> Maybe (a, b)
+safeMaximumBy _ [] = Nothing
+safeMaximumBy cmp xs = Just $ maximumBy cmp xs

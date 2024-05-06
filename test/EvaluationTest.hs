@@ -7,6 +7,7 @@ import Chess.Piece
 import Computer.Evaluation
 import Data.Maybe (isJust, fromJust, isNothing)
 import qualified Data.Map as M
+import Computer.MoveFinder (findBestMove)
 
 
 b :: Board
@@ -20,11 +21,12 @@ testBasicEvaluation = TestCase $ do
   assertNotEqual "White has a slight advantage after opening move" (evaluate $ fromJust e2_e4) (0)
   let removed_knight = clear (1,0) $ fromJust e2_e4
   let e7_e5 = makeMove (Move (Piece Pawn Black False) (4,6) (4,4)) removed_knight
-  assertEqual "debug" M.empty (debugEvaluation $ fromJust e7_e5)
+  assertBool "Black is even after e5" (evaluate (fromJust e7_e5)==0)
 
-  
+
 
 tests :: Test
 tests = TestList [
-    TestLabel "testBasicEvaluation" testBasicEvaluation
+    TestLabel "testBasicEvaluation" testBasicEvaluation,
+    TestLabel "testBasicEvaluation2" testBasicEvaluation2
     ]

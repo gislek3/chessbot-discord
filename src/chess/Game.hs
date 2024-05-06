@@ -103,7 +103,7 @@ respond g = g{gameState=Failed} -}
 
 respond :: ChessGame -> ChessGame
 respond g@ChessGame{board=b, toPlay= ON c} =
-    case getBestMove b c 8 of
+    case findBestMove b c of
         Just bMove -> move' bMove g
         Nothing -> g{gameState=Failed}
 respond g = g{gameState=Failed}
