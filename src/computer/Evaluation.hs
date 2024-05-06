@@ -1,4 +1,4 @@
-module Computer.Evaluation (evaluate, debugEvaluation) where
+module Computer.Evaluation (evaluate) where
 
 import Chess.Board
 import Chess.Piece
@@ -9,7 +9,7 @@ import qualified Data.Set as S
 import Data.Maybe (fromMaybe)
 
 
--- Main evaluation function using Reader monad
+--Score the current board
 evaluate :: Reader Board Int
 evaluate = do
     material <- evaluateMaterial
@@ -17,19 +17,8 @@ evaluate = do
     squares <- evaluateSquares
     return $ sum [material, threats, squares]
 
--- Debug evaluation using Reader monad
-debugEvaluation :: Board -> M.Map String Int
-debugEvaluation b = M.fromList [
-    ("Activity score", runReader evaluateSquares b),
-    ("Material score", runReader evaluateMaterial b),
-    ("King threat score", runReader calculateTotalThreats b),
-    ("King exposure score", runReader evaluateKingSafety b - runReader calculateTotalThreats b),
-    ("Total score", runReader evaluate b)
-    ]
 
-
-
--- Square value function using Reader monad
+--Score a square based on centrality, providing higher value to more "active squares"
 squareValue :: Square -> Reader Board Int
 squareValue s = asks $ \_ -> fromMaybe 0 (M.lookup s squareValueMap)
   where
@@ -39,10 +28,11 @@ squareValue s = asks $ \_ -> fromMaybe 0 (M.lookup s squareValueMap)
     calculateValue x y = max 0 $ baseValue - minimum (map (distanceFromCenter x y) centers)
     distanceFromCenter x0 y0 center = abs (x0 - fst center) + abs (y0 - snd center)
 
--- Evaluate squares using Reader monad
+
+--For each square, score it (could probably make this a lot less lines of code)
 evaluateSquares :: Reader Board Int
 evaluateSquares = do
-    moves <- asks getAllMoves  -- Fetch all moves directly within the Reader monad
+    moves <- asks getAllMoves
     mapM go (S.toList moves) >>= return . sum
   where
     go m = do
@@ -51,8 +41,7 @@ evaluateSquares = do
         return $ sqValue * colorFactor
 
 
-
--- Evaluate material using Reader monad
+--Evaluate material on the board
 evaluateMaterial :: Reader Board Int
 evaluateMaterial = do
     b <- ask
@@ -67,6 +56,7 @@ evaluateMaterial = do
           King   -> 0*m
 
 
+--Check how attacked the kingsides are
 calculateTotalThreats :: Reader Board Int
 calculateTotalThreats = do
     b <- ask
@@ -79,21 +69,6 @@ calculateTotalThreats = do
     return $ sum whiteThreats - sum blackThreats
 
 
-evaluateKingSafety :: Reader Board Int
-evaluateKingSafety = do
-    threats <- calculateTotalThreats
-    b <- ask
-    let blackSurroundings = getSurroundings (getKingSquare Black b)
-    let whiteSurroundings = getSurroundings (getKingSquare White b)
-    blackExposed <- sum <$> mapM evaluateExposure blackSurroundings
-    whiteExposed <- sum <$> mapM evaluateExposure whiteSurroundings
-    return (threats + blackExposed - whiteExposed)
-
-
-evaluateExposure :: Square -> Reader Board Int
-evaluateExposure s = do
-    b <- ask 
-    return $ if isEmpty (lookupB s b) then 3 else 0
-
+--Scoring function for each "threatened king square"
 isThreatTo :: Move -> Square -> Reader Board Int
 isThreatTo m s = asks $ \_ -> if new_square m == s then 6 else 0
