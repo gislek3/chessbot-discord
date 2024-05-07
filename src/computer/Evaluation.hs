@@ -64,7 +64,7 @@ evaluateMaterial = do
     b <- ask
     let pieces = getAllPieces b
     return $ sum $ map pieceValue pieces where
-      pieceValue (Piece pieceType c _) = let m = if c==White then 1 else (-1) in case pieceType of
+      pieceValue (Piece pt c _) = let m = if c==White then 1 else (-1) in case pt of
           Pawn   -> 150*m
           Knight -> 400*m
           Bishop -> 500*m
