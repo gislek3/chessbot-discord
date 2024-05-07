@@ -9,17 +9,34 @@ import qualified Data.Set as S
 import Data.Maybe (fromMaybe)
 
 
---Score the current board
-evaluate :: Reader Board Int
-evaluate = do
+{-
+Evaluations are performed on boards, which "scores" them judging by their advantage. Factors
+like material value, activity (your piece's access to squares) and the safety of your king,
+are individually scored and summed up to an aggregate evaluation. A positive score favors
+white, while a negative score favors black. These scores are later used in order to decide
+moves for the computer.
+-}
+
+
+--Aliasing for the board-to-score reader instance, just to be neat
+type Evaluation = Reader Board Int
+
+
+--Main function, which "reads" the supplied board and performs calculations on it
+evaluate :: Board -> Int
+evaluate = runReader $ do
     material <- evaluateMaterial
     threats <- calculateTotalThreats
     squares <- evaluateSquares
     return $ sum [material, threats, squares]
 
 
+------------------------------------------------------------------------------------
+-- Helper functions below
+------------------------------------------------------------------------------------
+
 --Score a square based on centrality, providing higher value to more "active squares"
-squareValue :: Square -> Reader Board Int
+squareValue :: Square -> Evaluation
 squareValue s = asks $ \_ -> fromMaybe 0 (M.lookup s squareValueMap)
   where
     squareValueMap = M.fromList [((x, y), calculateValue x y) | x <- [0..7], y <- [0..7]]
@@ -30,7 +47,7 @@ squareValue s = asks $ \_ -> fromMaybe 0 (M.lookup s squareValueMap)
 
 
 --For each square, score it (could probably make this a lot less lines of code)
-evaluateSquares :: Reader Board Int
+evaluateSquares :: Evaluation
 evaluateSquares = do
     moves <- asks getAllMoves
     mapM go (S.toList moves) >>= return . sum
@@ -41,8 +58,8 @@ evaluateSquares = do
         return $ sqValue * colorFactor
 
 
---Evaluate material on the board
-evaluateMaterial :: Reader Board Int
+--Score material advantage. This evaluation overrates piece values to prevent easy blunders.
+evaluateMaterial :: Evaluation
 evaluateMaterial = do
     b <- ask
     let pieces = getAllPieces b
@@ -55,9 +72,9 @@ evaluateMaterial = do
           Queen  -> 1000*m
           King   -> 0*m
 
-
---Check how attacked the kingsides are
-calculateTotalThreats :: Reader Board Int
+--TODO: Improve so that it also accounts for the "openness", i.e. clear paths toward the king
+--Score total threat to the pieces that sorround the king
+calculateTotalThreats :: Evaluation
 calculateTotalThreats = do
     b <- ask
     let whiteKingSqs = getSurroundings (getKingSquare White b)
@@ -69,6 +86,6 @@ calculateTotalThreats = do
     return $ sum whiteThreats - sum blackThreats
 
 
---Scoring function for each "threatened king square"
-isThreatTo :: Move -> Square -> Reader Board Int
+--Helper function which checks whether or not a square is targeted
+isThreatTo :: Move -> Square -> Evaluation
 isThreatTo m s = asks $ \_ -> if new_square m == s then 6 else 0

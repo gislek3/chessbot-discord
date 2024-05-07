@@ -92,15 +92,6 @@ updateGameState g = let new = evaluateGameState g in
 move' :: Move -> ChessGame -> ChessGame
 move' (Move _ a b) = move a b
 
-
---If your opponent is a computer, automatically get response
-{- respond :: ChessGame -> ChessGame
-respond g@ChessGame{board=b, toPlay= ON c} =
-    case getRandomMove b c of
-        Just rMove -> move' rMove g
-        Nothing -> g{gameState=Failed}
-respond g = g{gameState=Failed} -}
-
 respond :: ChessGame -> ChessGame
 respond g@ChessGame{board=b, toPlay= ON c} =
     case findBestMove b c of
