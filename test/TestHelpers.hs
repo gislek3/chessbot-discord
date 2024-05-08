@@ -32,14 +32,4 @@ mMap (x:xs) b = do
     Just valid -> mMap xs valid
     Nothing -> b
 
-mMap' :: [(Square, Square)] -> ChessGame -> ChessGame
-mMap' l g@(ChessGame{board=b}) = evaluateGameState $ g{board=mMap l b}
 
-
-
-mMapGame :: [(Square, Square)] -> ChessGame -> ChessGame
-mMapGame [] game = game
-mMapGame (x:xs) game = do
-  let moved = uncurry move x game
-  if (not $ updated moved) then game
-  else mMapGame xs moved

@@ -1,106 +1,142 @@
+{-# LANGUAGE BlockArguments #-}
 module Chess.Game (module Chess.Game) where
 
 import Chess.Board
 import Chess.Piece
 import Computer.MoveFinder
 import Data.Maybe (isJust, fromJust)
-
+import Control.Monad.State
+import Debug.Trace
+import Debug.Trace
 import qualified Data.Set as S
+import Chess.Piece (oppositeColor)
 
 
+
+
+type Updated = Bool
+type ChessGame = State ChessData Updated
 data GameState = Active | Resigned | Drawn | InCheck Color | CheckMate Color | Stalemate | Reset | Failed deriving (Show, Eq)
 data ToPlay = ON Color | OFF deriving (Show, Eq)
 
--- CommandResult might include the outcome, a message for the user, and optionally the current state of the board.
-data ChessGame = ChessGame {
+data ChessData = ChessData {
     board :: Board,
     toPlay :: ToPlay,
     playerColor :: Color,
-    gameState :: GameState,
-    updated :: Bool
+    gameState :: GameState
 } deriving (Show, Eq)
 
 
-defaultStart :: ChessGame
-defaultStart = ChessGame {
+defaultStart :: ChessData
+defaultStart = ChessData {
     board = startingBoard,
     toPlay = ON White,
     playerColor = White,
-    gameState = Active,
-    updated = False
+    gameState = Active
 }
 
-swap :: ChessGame -> ChessGame
-swap g = case toPlay g of
-    OFF -> same g
-    ON c -> if c==playerColor g then
-            respond g{toPlay=ON $ oppositeColor c}
-        else
-            g{toPlay=ON $ oppositeColor c, updated=True}
-
-same :: ChessGame -> ChessGame
-same g = g{updated=False}
-
-reset :: ChessGame -> ChessGame
-reset g = g{board=startingBoard, toPlay = ON White, gameState=Active, updated=True}
-
-startBlack :: ChessGame
+startBlack :: ChessData
 startBlack = defaultStart{playerColor=Black}
 
-resign :: ChessGame -> ChessGame
-resign game = game { toPlay = OFF, gameState = Resigned, updated=True }
+swap :: ChessGame
+swap = get >>= \g -> do
+    trace "Swap has been called" $ return ()
+    trace "Swap has been called" $ return ()
+    trace "Swap has been called" $ return ()
+    trace "Swap has been called????" $ return ()
+    case toPlay g of
+        OFF -> return False
+        ON c -> if c==playerColor g then do
+                    trace "Calling for the bot to respond" $ return ()
+                    put g{toPlay=ON $ oppositeColor c}
+                    respond
+                else do
+                    trace "Calling for the human to respond" $ return ()
+                    put g{toPlay=ON $ oppositeColor c}
+                    return True
 
-off :: ChessGame -> ChessGame
-off game = game{toPlay = OFF, updated=True}
-
-draw :: ChessGame -> ChessGame
-draw game = game { toPlay = OFF, gameState = Drawn, updated=True  }
-
-getCurrentPlayer :: ChessGame -> Maybe Color
-getCurrentPlayer ChessGame{toPlay=tp} = case tp of
-    OFF -> Nothing
-    ON c -> Just c
 
 
+respond :: ChessGame
+respond = get >>= \g -> do
+    if toPlay g == OFF then return False else
+        case findBestMove (board g) (oppositeColor $ playerColor g) of
+            Just (Move _ start end) -> do
+                trace "Bot is responding" $ return ()
+                move start end
+            Nothing -> return False
+
+
+update :: ChessData -> ChessGame
+update d = do
+    put d
+    return True
+
+reset :: ChessGame
+reset = get >>= \g -> update g{board=startingBoard, toPlay = ON White, gameState=Active}
+
+resign :: ChessGame
+resign = get >>= \g -> update g{toPlay = OFF, gameState = Resigned}
+
+off :: ChessGame
+off = get >>= \g -> update g{toPlay = OFF}
+
+draw :: ChessGame
+draw = get >>= \g -> update g{toPlay = OFF, gameState = Drawn}
 
 --Castling wrapper
-castle :: PieceType -> ChessGame -> ChessGame
-castle pt g@(ChessGame {toPlay=ON c}) = if not $ elem pt [King, Queen] then same g else
-    case castleKing pt c (board g) of
-        Nothing -> same g
-        Just b -> swap g{board=b}
-castle _ g = same g
+castle :: PieceType -> ChessGame
+castle pt = get >>= \g ->
+    if toPlay g == OFF then return False
+    else if notElem pt [King, Queen] then return False else
+        case castleKing pt (playerColor g) (board g) of
+            Nothing -> return False
+            Just b -> do
+                put g{board=b}
+                swap
+
+getPlayer :: ChessData -> Maybe Color
+getPlayer d = case toPlay d of
+    ON c -> Just c
+    OFF -> Nothing
+
+move :: Square -> Square -> ChessGame
+move start end = do
+    trace ("Trying to make a move in Game:" ++ show start ++ " " ++ show end) $ return ()
+    g <- get
+    if toPlay g == OFF then return False else do
+        let p = lookupB start (board g)
+        if not (isPiece p) || (fromJust (getPlayer g) /= pieceColor (justPiece p)) then return False else
+            case makeMove (Move (justPiece p) start end) (board g) of
+                Nothing -> do
+                    trace "Move was NOT valid, returning False" $ return ()
+                    return False
+                Just movedBoard -> do
+                    trace "Move was valid, calling updateGameState" $ return ()
+                    put g{board=movedBoard}
+                    updateGameState
 
 
-
-move :: Square -> Square -> ChessGame -> ChessGame
-move _ _ g@(ChessGame{toPlay=OFF}) = same g
-move start end g@(ChessGame{board=b, toPlay=ON gc}) = let p = lookupB start b in
-    if not (isPiece p) || (gc /= pieceColor (justPiece p)) then same g else
-        case makeMove (Move (justPiece p) start end) b of
-            Nothing -> same g
-            Just movedBoard -> updateGameState g{board=movedBoard}
-
-updateGameState :: ChessGame -> ChessGame
-updateGameState g = let new = evaluateGameState g in
-    case gameState new of
-        CheckMate _ -> off new
-        Stalemate -> off new
-        Active -> swap new
-        _ -> swap new
-
-move' :: Move -> ChessGame -> ChessGame
+move' :: Move -> ChessGame
 move' (Move _ a b) = move a b
 
-respond :: ChessGame -> ChessGame
-respond g@ChessGame{board=b, toPlay= ON c} =
-    case findBestMove b c of
-        Just bMove -> move' bMove g
-        Nothing -> g{gameState=Failed}
-respond g = g{gameState=Failed}
 
-evaluateGameState :: ChessGame -> ChessGame
-evaluateGameState g@(ChessGame{board=b, gameState=gs}) =
+updateGameState :: ChessGame
+updateGameState = do
+    trace "updating game state?" $ return ()
+    g <- get
+    let newG = evaluateGameState g
+    put newG
+    case gameState newG of 
+        CheckMate _ -> off
+        Stalemate -> off
+        Drawn -> off
+        Active -> swap
+        _ -> swap
+
+
+evaluateGameState :: ChessData -> ChessData
+evaluateGameState g@(ChessData{board=b, gameState=gs}) =
     let allBlackMoves = getAllColorMoves Black b
         allWhiteMoves = getAllColorMoves White b
 
@@ -119,7 +155,3 @@ evaluateGameState g@(ChessGame{board=b, gameState=gs}) =
                      if whiteIsInCheck && not (canGetOutOfCheck White b) then CheckMate White else
                      if whiteIsInCheck then InCheck White else if whiteCantMove then Stalemate else Active
       in g{gameState=newState}
-
-
-isOver :: ChessGame -> Bool
-isOver g = gameState g /= Active
