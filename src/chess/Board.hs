@@ -3,15 +3,12 @@
 module Chess.Board (module Chess.Board) where
 
 
---Local imports
+--Imports
 import Chess.Piece
-
---Other imports
 import qualified Data.Map as M
-import Data.Maybe (fromJust, isNothing, isJust, catMaybes, listToMaybe)
+import Data.Maybe (fromJust, isNothing, isJust, catMaybes)
 import qualified Data.Text as T
 import qualified Data.Set as S
-import Chess.Piece (getCircle)
 
 
 -- Using Data.Map to inherit a lot of instances
@@ -19,8 +16,7 @@ type Board = M.Map Square Piece
 type Square = (Int, Int)
 type PositionedPiece = (Piece, Square)
 
-{- instance Show Board where
-  show = showB -}
+
 
 
 --A move consists of a Piece making a move and the square it is moving to
