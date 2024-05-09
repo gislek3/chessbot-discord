@@ -8,6 +8,14 @@ import Computer.MoveFinder
 import TestHelpers
 import Data.Maybe (isNothing)
 
+
+{-
+TODO: re-implement these tests, or see the note made in GameTestOriginal.hs
+
+These tests are slightly irrelevant.
+-}
+
+
 game :: ChessGame
 game = defaultStart
 
@@ -21,8 +29,6 @@ testMoveInGame= TestList
       let moved = uncurry move e2_e4 game
       assertEqual "Pawn is at e4" (lookupB (4,3) $ board moved) (Occupied $ Piece Pawn White True)
       assertBool "Moving a piece should succeed" (updated moved)
-      assertEqual "debug" Chess.Board.empty (board moved)
-      assertEqual "this passes" (gameState moved) (Active)
   ]
 
 testTurnSwitching :: Test

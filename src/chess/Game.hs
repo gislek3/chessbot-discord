@@ -9,9 +9,6 @@ import Computer.MoveFinder (findBestMove)
 import Data.Maybe (fromJust)
 
 
-
-
-
 {-
 A game is a board and its rules. Here, all the "game logic" is handled, which means
 that we decide the state of the game based on what is happening on the board and whose

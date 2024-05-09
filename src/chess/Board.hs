@@ -1,6 +1,6 @@
 {-# LANGUAGE OverloadedStrings #-}  -- allows "string literals" to be Text
 
-module Chess.Board (Board, Move(..), Square, showB, startingBoard, lookupB, isPiece, justPiece, isValidSquare,  castleKing, kingIsInCheck, canGetOutOfCheck, hasLegalMoves, makeMove, getAllMoves, getAllColorMoves, getSurroundings, getAllPieces, getKingSquare, getAllLegalColorMoves, getMoves) where
+module Chess.Board (Board, Move(..), Square, SquareContent(..), showB, startingBoard, lookupB, isPiece, justPiece, isValidSquare,  castleKing, kingIsInCheck, canGetOutOfCheck, hasLegalMoves, makeMove, getAllMoves, getAllColorMoves, getSurroundings, getAllPieces, getKingSquare, getAllLegalColorMoves, getMoves) where
 
 
 --Imports
@@ -315,4 +315,3 @@ castleKing side c b = if notElem side [King, Queen] then Nothing else do
           case intermediate of
             Nothing -> Nothing
             Just a -> makeMove' (Move (Piece King color True) (4,y) (2,y)) True a
-

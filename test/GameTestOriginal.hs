@@ -6,10 +6,23 @@ import Chess.Piece
 import Chess.Board
 import TestHelpers
 
-game :: ChessGame
+
+{-
+WARNING: deprecated
+
+These tests were made with an older version of ChessGame. It was based on a version
+that was not hard-coded to recieve responses to moves by the user. It can be re-introduced
+by allowing the ChessGame.hs module to faiciliate situations where both players are controlled
+by humans, or introducing some sort of debug flag.
+
+At the time of intentional deprecation, all tests passed.
+-}
+
+
+game :: ChessData
 game = defaultStart
 
-applyMoves :: ChessGame -> [(Square, Square)] -> ChessGame
+applyMoves :: ChessData -> [(Square, Square)] -> ChessData
 applyMoves = foldl (\g (start, end) -> move start end g)
 
 testMoveInGame :: Test

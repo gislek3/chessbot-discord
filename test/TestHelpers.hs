@@ -3,8 +3,8 @@ module TestHelpers (module TestHelpers) where
 import Text.Megaparsec (ParseErrorBundle)
 import Data.Text (Text)
 import Data.Void (Void)
-import Parsing.ChessParser (ChessCommand(..))
-import Chess.Board (Square, Move(..), Board, SquareContent(..), lookupB, makeMove, isValidSquare)
+import Parsing.ChessParser
+import Chess.Board (Square, Move(..), Board, lookupB, makeMove, isValidSquare)
 import Chess.Game
 import Test.HUnit
 

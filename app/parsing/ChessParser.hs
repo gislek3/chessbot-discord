@@ -12,7 +12,11 @@ import Chess.Piece (PieceType(Queen, King))
 
 
 {-
-Attempts to parse raw input from user into ChessCommands using MegaParsec
+Attempts to parse raw input from user into ChessCommands using MegaParsec. It turns
+for example user input like "e2 e4" into a command MoveCmd (4,1) (4,3) which can then
+be passed to the GameHandler, which will then in turn pass it to a move-function with these
+squares as an argument, which will manipulate the board of the specific user by moving whatever
+is on e2 to e4, if the move is possible.
 -}
 
 
@@ -64,13 +68,22 @@ castleParser = do
     ]
   return $ CastleCmd side
 
+
+{-
+TODO:
+
+Convert these simple parsing functions into a simpler (higher-order?) function which
+takes in a list of matching inputs, let's say ["show", "print"] or ["turn", "who"] and
+the matching Command-type, respectively turnParser and showParser.
+-}
+
 -- | A parser for the "flip" command.
 takebackParser :: Parser ChessCommand
 takebackParser = (string' "takeback" <|> string' "undo" <|> string' "regret") >> return TakebackCmd
 
 -- | A parser for the "flip" command.
 turnParser :: Parser ChessCommand
-turnParser = (string' "turn" <|> string' "toplay" <|> string' "who") >> return TurnCmd
+turnParser = (string' "turn" <|>  string' "who") >> return TurnCmd
 
 -- | A parser for the "flip" command.
 flipParser :: Parser ChessCommand
