@@ -1,6 +1,6 @@
 {-# LANGUAGE OverloadedStrings #-}
 
-module Parsing.ChessParser (module Parsing.ChessParser) where
+module Parsing.ChessParser (parseInput) where
 
 import Text.Megaparsec
 import Text.Megaparsec.Char
@@ -10,16 +10,16 @@ import Chess.Board (Square, isValidSquare)
 import Data.Char (toLower)
 import Chess.Piece (PieceType(Queen, King))
 
+
 {-
-TODO:
-- Combine all the "simple parsers" into a single one
+Attempts to parse raw input from user into ChessCommands using MegaParsec
 -}
 
 
---Define parser type; using Void for simplicity as we don't have custom error types here.
+-- | Define parser type; using Void for simplicity and/or tradition.
 type Parser = Parsec Void Text
 
---Parsing results are ChessCommand
+-- | Parsing results are ChessCommand
 data ChessCommand
   = MoveCmd Square Square
   | CastleCmd PieceType
@@ -31,10 +31,11 @@ data ChessCommand
   | TakebackCmd
   deriving (Show, Eq)
 
-
+-- | Converts an intepreted file character to a numerical value
 fileToNum :: Char -> Int
 fileToNum file = fromEnum (toLower file) - fromEnum 'a'
 
+-- | Parses a valid single square into an integer tuple, representing its rank and file values.
 squareParser :: Parser Square
 squareParser = do
   fileChar <- choice $ map char' ['a'..'h']  -- Accept 'a'-'h' in any case
@@ -45,14 +46,14 @@ squareParser = do
     then return (file, rank)     -- Return as (file, rank), bottom-left origin
     else fail "Square out of bounds"
 
---Move commands should be in the form "square square", such as "e2 e4"
+-- | Move commands should be in the form "square square", such as "e2 e4"
 moveParser :: Parser ChessCommand
 moveParser = do
   start <- squareParser
   space
   MoveCmd start <$> squareParser
 
---Castle commands should come in the form "castle queenside/kingside"
+-- | Castle commands should come in the form "castle queenside/kingside"
 castleParser :: Parser ChessCommand
 castleParser = do
   _ <- string' "castle"
@@ -63,36 +64,35 @@ castleParser = do
     ]
   return $ CastleCmd side
 
--- A parser for the "flip" command.
+-- | A parser for the "flip" command.
 takebackParser :: Parser ChessCommand
 takebackParser = (string' "takeback" <|> string' "undo" <|> string' "regret") >> return TakebackCmd
 
--- A parser for the "flip" command.
+-- | A parser for the "flip" command.
 turnParser :: Parser ChessCommand
 turnParser = (string' "turn" <|> string' "toplay" <|> string' "who") >> return TurnCmd
 
--- A parser for the "flip" command.
+-- | A parser for the "flip" command.
 flipParser :: Parser ChessCommand
 flipParser = string' "flip" >> return FlipCmd
 
--- A parser for the "resign" command.
+-- | A parser for the "resign" command.
 resignParser :: Parser ChessCommand
 resignParser = string' "resign" >> return ResignCmd
 
--- A parser for the "show" command.
+-- | A parser for the "show" command.
 showParser :: Parser ChessCommand
 showParser = (string' "show" <|> string' "print") >> return ShowCmd
 
---A parser for the "reset" command
+-- | A parser for the "reset" command
 resetParser :: Parser ChessCommand
 resetParser = (string' "reset" <|> string' "start over") >> return ResetCmd
 
-
--- Combine all parsers to parse any of the commands.
+-- | Combine all parsers to parse any of the commands.
 commandParser :: Parser ChessCommand
 commandParser = try moveParser <|> try flipParser <|> resignParser <|> showParser <|> resetParser
                 <|> castleParser <|> try turnParser <|> try takebackParser
 
--- Pparse input text into a ChessCommand.
+-- | Parse input text into an intepretable ChessCommand, which will decide how we should modify the state of the chess game belonging to the user who submitted the input.
 parseInput :: Text -> Either (ParseErrorBundle Text Void) ChessCommand
 parseInput = parse commandParser ""

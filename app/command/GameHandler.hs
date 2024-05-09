@@ -17,7 +17,6 @@ import Control.Monad.State (runState)
 import Parsing.ChessParser (parseInput, ChessCommand(..))
 import Chess.Game
 import Chess.Piece (Color(..), PieceType(Queen, King))
-import Chess.Board (SquareContent(Illegal))
 import Parsing.ChessParser (ChessCommand(..))
 
 

@@ -1,6 +1,6 @@
 {-# LANGUAGE OverloadedStrings #-}  -- allows "string literals" to be Text
 
-module Chess.Board (module Chess.Board) where
+module Chess.Board (Board, Move(..), Square, showB, startingBoard, lookupB, isPiece, justPiece, isValidSquare,  castleKing, kingIsInCheck, canGetOutOfCheck, hasLegalMoves, makeMove, getAllMoves, getAllColorMoves, getSurroundings, getAllPieces, getKingSquare, getAllLegalColorMoves, getMoves) where
 
 
 --Imports
@@ -11,45 +11,47 @@ import qualified Data.Text as T
 import qualified Data.Set as S
 
 
--- Using Data.Map to inherit a lot of instances
+{-
+The board is defined as Map from Square to Piece. Each move results in a new Map reflecting
+the updated state,  avoiding side effects and fostering referential transparency. 
+I get to inherit a lot of instances and efficiency in use of higher-order functions than
+if I were to implement my own structure.
+-}
+
+
+-- | 
 type Board = M.Map Square Piece
+
+-- | Simple alias for squares. We start bottom left, so a1 is (0,0) and h8 is (7,7)
 type Square = (Int, Int)
+
+-- | Wrapper for a Piece at a given position
 type PositionedPiece = (Piece, Square)
 
+-- | A square can eiher by occupied by a piece on a board, an empty space on a board, or an invalid/illegal square. Doing this instead of Maybe Square allows me to distinguish beween empty squares and squares outside teh board.
+data SquareContent = Illegal | Empty | Occupied Piece deriving (Show, Eq)
+
+-- | A move consists of a Piece making a move and the square it is moving to
+data Move = Move {piece :: Piece, old_square :: Square, new_square :: Square} deriving (Show, Eq)
+
+instance Ord Move where compare (Move _ o1 n1) (Move _ o2 n2) = compare (o1, n1) (o2, n2)
 
 
 
---A move consists of a Piece making a move and the square it is moving to
-data Move = Move {piece :: Piece, old_square :: Square, new_square :: Square}
-    deriving (Show, Eq)
-
-instance Ord Move where
-    compare (Move _ o1 n1) (Move _ o2 n2) = compare (o1, n1) (o2, n2)
-
-
-
--- Initialize an empty chess board
+-- | Initialize an empty chess board
 empty :: Board
 empty = M.empty
 
--- Place a piece on the board
+-- | Place a piece on the board
 place :: Square -> Piece -> Board -> Board
 place s p b= if (isValidSquare s) then M.insert s p b else b
 
--- Clear a square on the board, does nothing if square is empty by default
+-- | Clear a square on the board, does nothing if square is empty by default
 clear :: Square -> Board -> Board
 clear = M.delete
 
-squareList :: [Square]
-squareList = [(x,y) | x<-[0..7], y<-[0..7]]
 
---data SquareContent = Illegal | Empty | Occupied Piece | EnemyPiece Piece | FriendlyPiece Piece
---  deriving (Show, Eq)
-
-data SquareContent = Illegal | Empty | Occupied Piece deriving (Show, Eq)
-
-
--- TODO: Initialize the initial board, in the starting position
+-- | Initialize the initial board, in the starting position
 startingBoard :: Board
 startingBoard = foldr (\(s, p) board -> place s p board) empty startingPieces
   where
@@ -74,7 +76,7 @@ startingBoard = foldr (\(s, p) board -> place s p board) empty startingPieces
 
 
 
---Returns the content of the square as a SquareContent
+-- | Returns the content of a board's square as a SquareContent
 lookupB :: Square -> Board -> SquareContent
 lookupB s b
   | not $ isValidSquare s = Illegal
@@ -82,44 +84,29 @@ lookupB s b
   | isNothing (M.lookup s b) = Empty
   | otherwise = error "Invalid state reached in lookupB"
 
-
+-- | fromJust-inspired approach to retrieving a piece from a SquareContent
 justPiece :: SquareContent -> Piece
 justPiece s = case s of
   Occupied p -> p
   _ -> error "SquareContent supplied does not contain a piece."
 
---Checks whether the contents of a square is a piece, comparable to isJust
+-- | isJust-inspired approach, checks whether the contents of a square is a piece.
 isPiece :: SquareContent -> Bool
 isPiece s = case s of
   Occupied _ -> True
   _ -> False
 
---Checks whether the contents of a square is null, comparable to isNothing
-isEmpty :: SquareContent -> Bool
-isEmpty s = case s of
-  Empty -> True
-  _ -> False
 
---isEmpty primed for square input
-isEmptySquare :: Square -> Board -> Bool
-isEmptySquare s b = isEmpty $ lookupB s b
-
-isFriendlyTo :: Color -> SquareContent -> Bool
-isFriendlyTo c s = isPiece s && (c==(pieceColor $ justPiece s))
-
-isEnemyTo :: Color -> SquareContent -> Bool
-isEnemyTo c s = not $ isFriendlyTo c s
-
+-- | Check if a supplied square falls within the bounds of normal chess dimensions.
 isValidSquare :: Square -> Bool
 isValidSquare (x,y) = (x >= 0 &&  x <= 7) && (y >= 0 && y <= 7)
 
-isValidSquare' :: Move -> Bool
-isValidSquare' (Move _ start end) = isValidSquare start && isValidSquare end
 
+-- | Retrieve all the pieces on the board as a list of pieces.
 getAllPieces :: Board -> [Piece]
-getAllPieces b = [justPiece (lookupB s b) | s <- squareList, isPiece (lookupB s b)]
+getAllPieces b = [justPiece (lookupB s b) | s <- [(x,y) | x<-[0..7], y<-[0..7]], isPiece (lookupB s b)]
 
--- Makes the board intoa human-readable Text representation
+-- | Makes the board intoa human-readable Text representation
 showB :: Board -> T.Text
 showB b = "```\n" <> topMargin <> "\n" <> T.intercalate "\n" boardRows <> "\n" <> bottomMargin <> "\n```"
   where
@@ -139,6 +126,7 @@ showB b = "```\n" <> topMargin <> "\n" <> T.intercalate "\n" boardRows <> "\n" <
         ) | x <- [0..7]]
 
 
+-- | Check the top and bottom ranks if we should convert pawns to queens. White pawns get promoted at the 8th rank, while black pawns get promoted at the 1st rank.
 evaluatePromotions :: Board -> Board
 evaluatePromotions = M.mapWithKey promoteIfPossible
   where
@@ -149,7 +137,7 @@ evaluatePromotions = M.mapWithKey promoteIfPossible
       _ -> p
 
 
--- Applies a move to the board if the move is legal
+-- | Applies a move to the board if the move is legal. Includes a flag to "force" a move.
 makeMove' :: Move -> Bool -> Board -> Maybe Board
 makeMove' m@(Move _ start stop ) forced board =
     if (isValidSquare start && isValidSquare stop) && is_legal start stop board then
@@ -172,26 +160,34 @@ makeMove' m@(Move _ start stop ) forced board =
       Empty -> False
       Illegal -> error "Illegal squares passed the initial check."
 
+-- | Make a move on the board. Returns the board with the new move applied to it upon success and Nothing if the move was illegal.
 makeMove :: Move -> Board -> Maybe Board
 makeMove m = makeMove' m False
 
-makeMove'' :: Square -> Square -> Board -> Maybe Board
-makeMove'' start stop b = let p = lookupB start b in
-  if isPiece p then makeMove (Move (justPiece p) start stop)  b else Nothing
 
--- Helper function to apply a move to the board and check legality
+-- | Collect the possible moves for a piece in a given position
+getMoves :: PositionedPiece -> Board -> S.Set Move
+getMoves (p@(Piece pt c _), position) board =
+    if pt==Pawn then getPawnMoves (p, position) board else
+      let movementPattern = getMovementPattern pt
+          deltasList = deltas movementPattern
+          isContinuous = continous movementPattern
+      in S.unions [followDelta p board position delta c isContinuous | delta <- deltasList]
+
+
+-- | Export-friendly version of is_legal
 isLegalMove :: Move -> Board -> Bool
 isLegalMove m b = isJust (makeMove m b)
 
---Return all valid moves for a given board
+-- | Return all valid moves for a given board. A valid move is a move that can theoretically be made, meaning that it coincides with the piece's movement. This seperates it from a legal move, which is a valid move that does not leave you in check at the end of your turn. Valid moves and legal moves are usually the same, but not always.
 getAllMoves :: Board -> S.Set Move
 getAllMoves b = S.union (getAllColorMoves White b) (getAllColorMoves Black b)
 
---Return all legal moves for a given board
+-- | Return all legal moves for a given board. A legal move is a valid move that is garuanteed not to leave you in check. This requires additional checks and is therefore more computationally expensive.
 getAllLegalMoves :: Board -> S.Set Move
 getAllLegalMoves b = S.union (getAllLegalColorMoves White b) (getAllLegalColorMoves Black b)
 
---Return all valid moves for a specific color
+-- | Return all valid moves for a given board and color. A valid move is a move that can theoretically be made, meaning that it coincides with the piece's movement. This seperates it from a legal move, which is a valid move that does not leave you in check at the end of your turn. Valid moves and legal moves are usually the same, but not always.
 getAllColorMoves :: Color -> Board -> S.Set Move
 getAllColorMoves c b = S.unions $ [getPieceMoves (x, y) | x <- [0 .. 7], y <- [0 .. 7]]
   where
@@ -199,7 +195,7 @@ getAllColorMoves c b = S.unions $ [getPieceMoves (x, y) | x <- [0 .. 7], y <- [0
       Occupied p@(Piece _ colorOfPiece _)| colorOfPiece == c -> getMoves (p,sq) b
       _ -> S.empty
 
---Return all legal moves for a given color
+-- | Return all legal moves for a given board and color. A legal move is a valid move that is garuanteed not to leave you in check. This requires additional checks and is therefore more computationally expensive.
 getAllLegalColorMoves :: Color -> Board -> S.Set Move
 getAllLegalColorMoves c b = S.filter (`isLegalMove` b) (getAllColorMoves c b)
 
@@ -207,17 +203,17 @@ getAllLegalColorMoves c b = S.filter (`isLegalMove` b) (getAllColorMoves c b)
 getNextSquare :: Delta -> Square -> Maybe Square
 getNextSquare (rowD, colD) (row, col) = if isValidSquare (row+rowD, col+colD) then Just (row+rowD, col+colD)  else Nothing
 
+-- | Returns the squares around another square as a list
 getSurroundings :: Square -> [Square]
 getSurroundings s = catMaybes [getNextSquare d s | d <- getCircle]
 
--- Function to find the king's square for a given color
+-- | Function to find the king's square for a given color
 getKingSquare :: Color -> Board -> Square
 getKingSquare color = fst . head . filter isKing . M.assocs
   where
     isKing (_, piece) = pieceType piece == King && pieceColor piece == color
 
-
---Checks whether or not the king of a given color is in check by seeing if it's targeted by any of its enemies
+-- | Checks whether or not the king of a given color is in check by seeing if it's targeted by any of its enemies
 kingIsInCheck :: Color -> S.Set Move -> Board -> Bool
 kingIsInCheck friendlyColor enemyMoves b = not $ null [lookupB (new_square m) b | m <- S.toList enemyMoves,
             case lookupB (new_square m) b of
@@ -230,42 +226,45 @@ kingIsInCheck' friendlyColor b = let enemyMoves = getAllColorMoves (oppositeColo
   in kingIsInCheck friendlyColor enemyMoves  b 
 
 
+-- | Checks whether or not the king is in checkmate by checking if it's both in check AND has no legal moves left.
 kingIsInCheckmate :: Color -> Board -> Bool
 kingIsInCheckmate friendlyColor b = let enemyMoves = getAllColorMoves (oppositeColor friendlyColor) b in
   (kingIsInCheck friendlyColor enemyMoves b) && not (canGetOutOfCheck friendlyColor b)
 
-
+--TODO: expand for stalemates
+-- | Checks if either kings are in checkmate.
 gameIsOver :: Board -> Bool
 gameIsOver b = (kingIsInCheckmate White b) || (kingIsInCheckmate Black b)
 
---Given a moveset and a target square, return a subset containing the moves who end up at the target
+-- | Given a moveset and a target square, return a subset containing the moves who end up at the target
 movesThatReachSquare :: S.Set Move -> Square -> S.Set Move
 movesThatReachSquare moves target = S.fromList [m | m <- S.toList moves, new_square m == target]
 
---Checks that after a given move; if the supplied color's king is in check
+-- | Checks that after a given move; if the supplied color's king is in check
 inCheckAfterMove :: Move -> Color -> Board -> Bool
 inCheckAfterMove m myColor b =
     case makeMove m b of
         Just movedBoard -> kingIsInCheck myColor (getAllColorMoves (oppositeColor myColor) movedBoard) movedBoard
         Nothing -> False
 
+-- | Checks whether or not a king can get out of check, meaning that it has legal moves left. Useful for checkmate validation
 canGetOutOfCheck :: Color -> Board -> Bool
 canGetOutOfCheck c b = or [not $ inCheckAfterMove m c b | m <- S.toList (getAllColorMoves c b)]
 
+-- | Checks whether or not a king has any legal moves. Useful for both checkmate and stalemate evaluations.
 hasLegalMoves :: Color -> S.Set Move -> Board -> Bool
 hasLegalMoves c friend b = or [not (inCheckAfterMove m c b) | m <- S.toList friend]
 
 
 
---TODO: optimize code
--- TODO: comment
+-- | "Follows" a delta until it reaches completion, either by going out of bounds or by encountering a piece. See MovementPattern for more details.
 followDelta :: Piece -> Board -> Square -> Delta -> Color -> Bool -> S.Set Move
 followDelta p board start delta c continuous = go start
   where
     go sq
       | not continuous = case getNextSquare delta sq of
           Just nextSq -> case lookupB nextSq board of
-            Illegal -> S.empty
+            Illegal -> S.empty --
             Empty -> S.insert (Move p start nextSq) S.empty
             Occupied (Piece _ colorAtSquare _) ->
               if colorAtSquare /= c then S.singleton (Move p start nextSq) else S.empty
@@ -279,7 +278,7 @@ followDelta p board start delta c continuous = go start
               if colorAtSquare /= c then S.singleton (Move p start nextSq) else S.empty
 
 
-
+-- | Pawns are unique, in that they capture and move differently. Therefore it's best to handle their movement-logic seperately.
 getPawnMoves :: PositionedPiece -> Board -> S.Set Move
 getPawnMoves ((p@(Piece {pieceType = Pawn, pieceColor = c, hasMoved = hm}), (x, y))) board =
   let
@@ -297,8 +296,7 @@ getPawnMoves ((p@(Piece {pieceType = Pawn, pieceColor = c, hasMoved = hm}), (x, 
 getPawnMoves _ _= error "getPawnMoves called with non-pawn argument"
 
 
---TODO: optimize code
---Returns potential castling squares
+-- | Performs a castling action, which involves swapping your king and rook to achieve additional safety.
 castleKing :: PieceType -> Color -> Board -> Maybe Board
 castleKing side c b = if notElem side [King, Queen] then Nothing else do
     let enemyMoves = S.toList $ getAllColorMoves (oppositeColor c) b
@@ -332,13 +330,3 @@ castleKing side c b = if notElem side [King, Queen] then Nothing else do
             Nothing -> Nothing
             Just a -> makeMove' (Move (Piece King color True) (4,y) (2,y)) True a
 
-
-
--- | Collect the possible moves for a piece in a given position
-getMoves :: PositionedPiece -> Board -> S.Set Move
-getMoves (p@(Piece pt c _), position) board =
-    if pt==Pawn then getPawnMoves (p, position) board else
-      let movementPattern = getMovementPattern pt
-          deltasList = deltas movementPattern
-          isContinuous = continous movementPattern
-      in S.unions [followDelta p board position delta c isContinuous | delta <- deltasList]

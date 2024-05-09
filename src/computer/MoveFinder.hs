@@ -16,15 +16,16 @@ to try to find the move that gives the best score considering the best available
 -}
 
 
+--TODO: Remove/semi-arbitrate determinism
 --TODO: Increase depth, perhaps dynamically? At least to one more step to prevent one-twos like forks.
---This function evaluates the best move for a given color on the board
+-- | This function evaluates the best move for a given color on the board
 findBestMove :: Board -> Color -> Maybe Move
 findBestMove board color =
-    let moves = S.toList $ getAllColorMoves color board
+    let moves = S.toList $ getAllLegalColorMoves color board
         scoredMoves = [(move, scoreMove move board) | move <- moves]
     in fst <$> safeMaximumBy (\(_, score1) (_, score2) -> compare score1 score2) scoredMoves
 
---Score a move "in context", i.e. taking the opponents response into consideration
+-- | Score a move "in context", i.e. taking the opponents response into consideration
 scoreMove :: Move -> Board -> Int
 scoreMove move board =
     case makeMove move board of
@@ -36,12 +37,12 @@ scoreMove move board =
                 evaluateMove m b = maybe minBound evaluate (makeMove m b)
                 --Maximizing opponent response
                 bestOpponentResponse b color =
-                    let responses = S.toList $ getAllColorMoves color b
+                    let responses = S.toList $ getAllLegalColorMoves color b
                         opponentScores = map (`evaluateMove` b) responses
                     in if null opponentScores then 0 else maximum opponentScores
 
 
--- Safe maximum by function to prevent errors on empty lists
+-- | Safe maximum by function to prevent errors on empty lists
 safeMaximumBy :: ((a, b) -> (a, b) -> Ordering) -> [(a, b)] -> Maybe (a, b)
 safeMaximumBy _ [] = Nothing
 safeMaximumBy cmp xs = Just $ maximumBy cmp xs
