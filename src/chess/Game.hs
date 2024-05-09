@@ -15,7 +15,9 @@ import Data.Maybe (fromJust)
 {-
 A game is a board and its rules. Here, all the "game logic" is handled, which means
 that we decide the state of the game based on what is happening on the board and whose
-turn it is to play.
+turn it is to play. Using the State monad, I defined this as a composition of data
+relating to the chess board, whose turn it is to play, who is controlling which color,
+and inferred properties like checks, checkmates and stalemates.
 -}
 
 

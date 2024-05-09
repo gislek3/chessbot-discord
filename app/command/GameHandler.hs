@@ -21,7 +21,13 @@ import Parsing.ChessParser
 
 
 {-
-
+The game handler consists of a registry, which maps user id's (Discord clients), and their
+respective chess games. These games are stored as the ChessData type (see Game.hs). The
+registry is a shared transactional variable, which should make it thread-safe, allowing
+all users concurrent access to their individual game states. The chess data is manipulated
+based on user input, which is formed into ChessCommands, which is then translated into
+game-related functionality, which is then processed using runState from the State instance
+defined in Game.hs.
 -}
 
 -- | TVARs from STM to support atomic memory transactions, creating a functional and thread-safe global registry

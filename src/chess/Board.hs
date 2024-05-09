@@ -19,13 +19,13 @@ if I were to implement my own structure.
 -}
 
 
--- | 
+-- | Defining the board as a type alias
 type Board = M.Map Square Piece
 
 -- | Simple alias for squares. We start bottom left, so a1 is (0,0) and h8 is (7,7)
 type Square = (Int, Int)
 
--- | Wrapper for a Piece at a given position
+-- | Composite for a Piece at a given position
 type PositionedPiece = (Piece, Square)
 
 -- | A square can eiher by occupied by a piece on a board, an empty space on a board, or an invalid/illegal square. Doing this instead of Maybe Square allows me to distinguish beween empty squares and squares outside teh board.
