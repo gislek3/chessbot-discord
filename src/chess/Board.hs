@@ -226,20 +226,6 @@ kingIsInCheck' friendlyColor b = let enemyMoves = getAllColorMoves (oppositeColo
   in kingIsInCheck friendlyColor enemyMoves  b 
 
 
--- | Checks whether or not the king is in checkmate by checking if it's both in check AND has no legal moves left.
-kingIsInCheckmate :: Color -> Board -> Bool
-kingIsInCheckmate friendlyColor b = let enemyMoves = getAllColorMoves (oppositeColor friendlyColor) b in
-  (kingIsInCheck friendlyColor enemyMoves b) && not (canGetOutOfCheck friendlyColor b)
-
---TODO: expand for stalemates
--- | Checks if either kings are in checkmate.
-gameIsOver :: Board -> Bool
-gameIsOver b = (kingIsInCheckmate White b) || (kingIsInCheckmate Black b)
-
--- | Given a moveset and a target square, return a subset containing the moves who end up at the target
-movesThatReachSquare :: S.Set Move -> Square -> S.Set Move
-movesThatReachSquare moves target = S.fromList [m | m <- S.toList moves, new_square m == target]
-
 -- | Checks that after a given move; if the supplied color's king is in check
 inCheckAfterMove :: Move -> Color -> Board -> Bool
 inCheckAfterMove m myColor b =

@@ -1,6 +1,6 @@
 module Computer.Evaluation (evaluate) where
 
-import Chess.Board (Move(..), Square, Board, getAllColorMoves, getKingSquare, getAllMoves, getSurroundings, getAllPieces)
+import Chess.Board
 import Chess.Piece
 import Control.Monad.Reader
 

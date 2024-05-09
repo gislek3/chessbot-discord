@@ -1,6 +1,6 @@
 {-# LANGUAGE OverloadedStrings #-}
 
-module Parsing.ChessParser (parseInput) where
+module Parsing.ChessParser (parseInput, ChessCommand(..)) where
 
 import Text.Megaparsec
 import Text.Megaparsec.Char

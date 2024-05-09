@@ -2,7 +2,7 @@
 
 
 
-module Command.GameHandler where
+module Command.GameHandler (setupGameHandler, CommandResult(..), CommandOutcome(..)) where
 
 --Discord imports
 import Discord.Types (UserId)
@@ -14,30 +14,37 @@ import qualified Data.Text as T
 import Control.Monad.State (runState)
 
 --Local imports
-import Parsing.ChessParser (parseInput, ChessCommand(..))
 import Chess.Game
-import Chess.Piece (Color(..), PieceType(Queen, King))
-import Parsing.ChessParser (ChessCommand(..))
+import Chess.Piece
+import Parsing.ChessParser
 
 
---TVARs from STM to support atomic memory transactions, creating a functional and thread-safe global registry
+
+{-
+
+-}
+
+-- | TVARs from STM to support atomic memory transactions, creating a functional and thread-safe global registry
 type GameRegistry = TVar (M.Map UserId ChessData)
 
---High-levelled status enum that summarizes the outcome of a ChessCommand
+-- | High-levelled status enum that summarizes the outcome of a ChessCommand
 data CommandOutcome = Modified GameState | Passive PassiveType | Unmodified FailType  deriving (Show, Eq)
 
+-- | Different representations of successful modifications to the game state
 data SuccessType = LegalMove | Check | Resign deriving (Show, Eq)
+-- | Different representations of unsuccessful modifications to the game state
 data FailType = IllegalMove | Invalid deriving (Show, Eq)
+-- | Different representations of non-modifications to the game state. Useful for retrieving information about the current state.
 data PassiveType = Print | Turn deriving (Show, Eq)
 
---Composite of a result: The enumeric outcome of the ChessCommand, a human-friendly summary, and the resulting game of chess
+-- | Composite of a result of a interpreted ChessCommand: The enumeric outcome of the ChessCommand, a human-friendly summary, and the resulting game of chess
 data CommandResult = CommandResult {
     outcome :: CommandOutcome,
     message :: T.Text,
     game :: ChessData
 } deriving (Show, Eq)
 
---Create a command handler which recieves user input, parses and executes commands on games
+-- | Create a command handler which recieves user input, parses and executes commands on games
 setupGameHandler :: GameRegistry -> UserId -> T.Text -> IO CommandResult
 setupGameHandler gameRegistry userId inputText =
   atomically $ do --as we want to read the shared registry, we need an atomic action
@@ -57,7 +64,7 @@ setupGameHandler gameRegistry userId inputText =
           _ -> return commandResult --
 
 
---Function which handles the use of ChessCommand on the user's game and communicates result
+-- | Function which handles the use of ChessCommand on the user's game and communicates result
 processCommand :: ChessCommand -> ChessData -> CommandResult
 processCommand command input =
   case command of
