@@ -334,7 +334,7 @@ castleKing side c b = if notElem side [King, Queen] then Nothing else do
 
 
 
---Collect the possible moves for a piece in a given position
+-- | Collect the possible moves for a piece in a given position
 getMoves :: PositionedPiece -> Board -> S.Set Move
 getMoves (p@(Piece pt c _), position) board =
     if pt==Pawn then getPawnMoves (p, position) board else
