@@ -12,11 +12,7 @@ It was made for an obligatory assignment in INF221: Advanced Functional Programm
 <h4>Running the back-end:</h4>
 
 <p>
-Invite it to your server:
-https://discord.com/oauth2/authorize?client_id=1209995597805916201&permissions=67584&scope=bot
-
-Or you can try to join a test server that I created for it and message it from there:
-https://discord.gg/r5fuKFXV
+Invite it to your server
 
 Then navigate to the folder with the stack file in it:
 - cd chessbot-discord
