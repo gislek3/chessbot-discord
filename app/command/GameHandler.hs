@@ -2,7 +2,7 @@
 
 
 
-module Command.GameHandler (setupGameHandler, CommandResult(..), CommandOutcome(..)) where
+module Command.GameHandler (setupGameHandler, CommandResult(..), CommandOutcome(..), PassiveType(..)) where
 
 --Discord imports
 import Discord.Types (UserId)

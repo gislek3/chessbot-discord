@@ -4,7 +4,7 @@ import Text.Megaparsec (ParseErrorBundle)
 import Data.Text (Text)
 import Data.Void (Void)
 import Parsing.ChessParser
-import Chess.Board (Square, Move(..), Board, lookupB, makeMove, isValidSquare)
+import Chess.Board
 import Chess.Game
 import Test.HUnit
 

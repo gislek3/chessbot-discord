@@ -33,11 +33,13 @@ import Chess.Game
 Most of the code found on this page has been copied from:
 https://github.com/discord-haskell/discord-haskell/tree/master
 
-And I've only made modifications to it to suit my needs.
+And I've only made modifications to specifically facilitate the chessbot, while the
+basic framework of recieving and sending message is just taken from the github. I claim
+no rights to it.
 -}
 
--- Define a higher-order function that takes a handleCommand function
--- and returns an event handler
+
+-- | A higher-order function that takes a Command-handling function and returns an event handler capable of translating game-related state evalutions to Discord events. 
 createEventHandler :: (UserId -> T.Text -> IO CommandResult) -> Event -> DiscordHandler ()
 createEventHandler handleCommand = \event -> case event of
   MessageCreate m -> when (isPrivateMsg m && not (fromBot m)) $ do
@@ -68,20 +70,18 @@ chessbot = do
 
 
 
--- Extract the user ID from a message
+-- | Extract the user ID from a message
 userIdFromMessage :: Message -> UserId
 userIdFromMessage = userId . messageAuthor
 
+-- | Infers that the author of a given message was a bot by checking its user data
 fromBot :: Message -> Bool
 fromBot = userIsBot . messageAuthor
 
--- Check if a message is a private message
+-- | Check if a message is a private message. Useful because the bot should only respond to private messages.
 isPrivateMsg :: Message -> Bool
 isPrivateMsg m = isNothing (messageGuildId m)
 
-
---isPing :: Message -> Bool
---isPing = ("ping" `isPrefixOf`) . toLower . messageContent
 
 main :: IO ()
 main = chessbot

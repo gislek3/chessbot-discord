@@ -1,6 +1,6 @@
 {-# LANGUAGE OverloadedStrings #-}  -- allows "string literals" to be Text
 
-module Chess.Board (Board, Move(..), Square, SquareContent(..), showB, startingBoard, lookupB, isPiece, justPiece, isValidSquare,  castleKing, kingIsInCheck, canGetOutOfCheck, hasLegalMoves, makeMove, getAllMoves, getAllColorMoves, getSurroundings, getAllPieces, getKingSquare, getAllLegalColorMoves, getMoves) where
+module Chess.Board (Board, Move(..), Square, SquareContent(..), clear, isLegalMove, place, empty, showB, startingBoard, lookupB, isPiece, justPiece, isValidSquare,  castleKing, kingIsInCheck, canGetOutOfCheck, hasLegalMoves, makeMove, getAllMoves, getAllColorMoves, getSurroundings, getAllPieces, getKingSquare, getAllLegalColorMoves, getMoves) where
 
 
 --Imports

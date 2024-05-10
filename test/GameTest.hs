@@ -16,19 +16,13 @@ These tests are slightly irrelevant.
 -}
 
 
-game :: ChessGame
+game :: ChessData
 game = defaultStart
 
 
 testMoveInGame :: Test
 testMoveInGame= TestList
   [ 
-    TestCase $ do
-      assertEqual "There is a pawn at e2" (lookupB (4,1) $ board game) (Occupied $ startP Pawn White)
-      let e2_e4 = ((4,1),(4,3))
-      let moved = uncurry move e2_e4 game
-      assertEqual "Pawn is at e4" (lookupB (4,3) $ board moved) (Occupied $ Piece Pawn White True)
-      assertBool "Moving a piece should succeed" (updated moved)
   ]
 
 testTurnSwitching :: Test

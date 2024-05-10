@@ -184,7 +184,7 @@ testCastle = TestList [
 
       let blocked = place (6,0) (Piece Knight White False) startBoard
       let unSafe = place (5,4) (Piece Rook Black True) startBoard
-      let moved = fromJust $ makeMove' (Move (Piece King White False) (5,0) (4,0)) True $ fromJust (makeMove' (Move (Piece King White True) (4,0) (5,0)) True startBoard)
+      let moved = fromJust $ makeMove (Move (Piece King White False) (5,0) (4,0)) $ fromJust (makeMove (Move (Piece King White True) (4,0) (5,0)) startBoard)
       
       assertBool "Kingside castle onto unsafe squares fails" (isNothing (castleKing King White unSafe))
       assertBool "Kingside castle with moved pieces fails" (isNothing (castleKing King White moved))
@@ -200,7 +200,7 @@ testCastle = TestList [
 
       let blocked = place (1,7) (Piece Knight Black False) startBoard
       let unSafe = place (2,4) (Piece Rook White True) startBoard
-      let moved = fromJust $ makeMove' (Move (Piece King Black True) (3,7) (4,7)) True $ fromJust (makeMove' (Move (Piece King Black False) (4,7) (3,7)) True startBoard)
+      let moved = fromJust $ makeMove (Move (Piece King Black True) (3,7) (4,7)) $ fromJust (makeMove (Move (Piece King Black False) (4,7) (3,7)) startBoard)
       
       assertBool "Queenside castle onto unsafe squares fails" (isNothing (castleKing Queen Black unSafe))
       assertBool "Queenside castle with moved pieces fails" (isNothing (castleKing Queen Black moved))
