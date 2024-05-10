@@ -1,19 +1,3 @@
-TODO:<br>
-221:<br>
-- Use the actual State monad in GameHandler / Game instead of your homebrew
-- Use the Reader monad in order to cut down on "game" and "board" parameters?
-<br>
-General:<br>
-- Clean up exports of modules, try to minimize, move functions as needed, split modules as needed
-- Implement takeback command
-- Implement en passant
-- Implement flipping the display
-- Implement more custom starts (endgame practice) (robot doesn't respond / offline multiplayer lmao) (simulation, which is that both colors are controlled by robot) maybe instead of botColor you should do an enum like whiteControlled Player and blackControlled Player, where Player = Human | Computer
-<br>
-Make the robot:<br>
-- Make a function that returns a random legal move for a given color
-- Make it so that the non-player 
-
 # chess221
 <h2>"What is this?"</h2>
 <p>
@@ -28,7 +12,13 @@ It was made for an obligatory assignment in INF221: Advanced Functional Programm
 <h4>Running the back-end:</h4>
 
 <p>
+Invite it to your server:
+https://discord.com/oauth2/authorize?client_id=1209995597805916201&permissions=67584&scope=bot
 
+Or you can try to join a test server that I created for it and message it from there:
+https://discord.gg/r5fuKFXV
+
+Then navigate to the folder with the stack file in it:
 - cd chessbot-discord
 - stack clean
 - stack build
@@ -39,11 +29,12 @@ It was made for an obligatory assignment in INF221: Advanced Functional Programm
 
 <h4>Interacting with the front-end:</h4>
 <p>
-
-- Invite the bot to a server (probably your own).
-- Interact with the bot by sending it a private message (it will not respond to messages in public chat, this is to avoid spam).
-- Type "help" for a list of commands.
-- Try to beat the world's dumbest chess computer.
+Send the bot a private message. Try "help" for a list of commands, or challange it by typing in the "e2 e4" opening. Other things you can do:
+  - reset : restarts the board
+  - show : print the board
+  - castle king : castles kingside, if possible
+  - castle queen : castles queenside, if possible
+  - resign : quit the game
 </p>
 
 <h2>"Wow, did you make it all by yourself?"</h2>
